@@ -21,7 +21,8 @@ const INITIAL_SERVICES = {
 const DEFAULT_COOKIE = `remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d=eyJpdiI6InZFdG1nRUhkMG5KZkRML1g3SnpSNXc9PSIsInZhbHVlIjoiUW5kRDBWTC9id2Fkd3Q0b2NyamRYTmlKMlZQSGQ4UmF5Y09NUWY3YnFJTjFZb05Db1VaeittbTc4eUw0WFU5Zmp0TDQ1NFBkcFpBejNodWtFdjE2b1QwMHBCeDZxQVpNaCs4ZFNSVWxvNjRoZGVmcGZPTVB6a2I2aGs3ZlZNVVFva0JPOW9Kdjh5endVcmlreHJtTEQ5Sk5FcDMzTkpVclZ1cS9ZRGlPWk83eVU0YkVHOCt6SUZXRjdkNVZKbEZiMklHRkZodjg1L00rejlVd29hL1JFZUlEQ0RMaXhyVUFOT1V1MklDaFN2bz0iLCJtYWMiOiI2NDk3NTI1N2VmYTI2M2Y1ZmRlYjliOGIzMzBiMDllNTgwZjhiOTI1NGRhOWVmZmUwMzg0ZGVjNDIzZGZjODVmIiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6Im9hOXF4d1M5Z29HY2YvakZnelhxdWc9PSIsInZhbHVlIjoiVDhJUkNkT0dxbkJiWTJWV0ZOamtsdFovQllKdHp4bmh3bGdyN0tRdzVseTRhWjJWbFg2Ti96UUM1RnA0VTdXcXZwSForRnQwTUVKdlI5a2JnMEhGQ1p2dStldVNVWFdVK1kxNXB2aktMMkczbnpIbHJKSy9Rc2Jza09xaVNKMEkiLCJtYWMiOiJlYWYzNTk3MGFjODk3NjliOGFhMGZmMDM3NjI5NDFjOWFmNGM5YjhlYTk2YzI4NmQ0ZjEwMGI0ZDg5ZjAyNDY2IiwidGFnIjoiIn0%3D; likevn_session=eyJpdiI6IjJXbWxHMUFKeTRTQURkWDdDdDg1akE9PSIsInZhbHVlIjoiUkNPajdHMXNqRmw4c29pRlI0TUpWWWpXaUdvbjFmTnFycytJM0FmUzFjN1ZZTk5wRmdxUFk1NHQvL0s4bkF4VjVoY1B4M2hSaVNJcjBEMlEreE1lcytxanEyQis4UHE2YUVvQ0xyaFg1UGlTZlZBZ2o2Z25hK21oQ0g5Wk5MME4iLCJtYWMiOiJjOGViZWJlMzJhMDgwM2YzNTQ5MDI0OGFlMzllYmFkZWUwYWMwYTBjNTI3ZDljYTFiMGM0NDZiM2FmOWJkODBkIiwidGFnIjoiIn0%3D; cf_clearance=kxE4BTVqhAyMKbtS3PJVPOJpTknYlLJrwifSdpGSEyQ-1783871828-1.2.1.1-13h02wVll4NIkkh820eO0Ajufj1T0p3XAf2DmzeJjcR6wEKq.D71rXUIO4Ahzwy3464Ktbn82L1YwXvvVjZdTBJWj6KMD1v1WyOFjKIb6VlSuXt49hq5.3_Q5IvkE.vHXIhLcwMn1Xgmx0IlvLL49OcJPcKSUeOKLB8T7c_LP75.FRTD.4spAp4PgiPldH6Y8n20p1IwSle7f8oSJQ4QtQ9Sh_c6OSDm3B7HvbFMQzZriFNnPUlCtY.Yq8wQEXr4R5vAJi7u.Wun.ddjEvHcGKxFBYIwwUya0XqrMM1i6mikC5PgYamzXirVGqQayJSRxkwPENCyaT96CGLTJipstg`;
 
 // Custom date parser for Like.vn format: "YYYY-MM-DD HH:mm:ss"
-const parseOrderDate = (str) => {
+// Unused but kept for reference if needed later
+const _parseOrderDate = (str) => {
   if (!str) return new Date(0);
   const parts = str.split(' ');
   if (parts.length !== 2) return new Date(0);
@@ -55,7 +56,7 @@ export default function App() {
   });
   const [balance, setBalance] = useState(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
-  const [apiConnectionOk, setApiConnectionOk] = useState(null);
+  const [_apiConnectionOk, setApiConnectionOk] = useState(null);
 
   // Tab & Form States (Dashboard)
   const [activeTab, setActiveTab] = useState('order'); // 'order', 'auto', or 'status'
@@ -243,7 +244,7 @@ export default function App() {
   };
 
   // Helper to place order via API (for manual orders with non-free services)
-  const placeOrderApi = async (serviceId, link, qty) => {
+  const _placeOrderApi = async (serviceId, link, qty) => {
     try {
       const response = await fetch('/api/v2', {
         method: 'POST',
@@ -386,7 +387,7 @@ export default function App() {
     return extractVideoId(url);
   };
 
-  const getThresholdDate = (windowStr) => {
+  const _getThresholdDate = (windowStr) => {
     const now = new Date();
     if (windowStr === 'all') return new Date(0);
     const hours = parseInt(windowStr, 10);
