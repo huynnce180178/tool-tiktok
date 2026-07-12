@@ -1,5 +1,4 @@
 import https from 'https';
-import url from 'url';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 
@@ -18,44 +17,48 @@ function getAgent(proxyUrl) {
 
 function makeRequest(targetUrl, options = {}) {
   return new Promise((resolve, reject) => {
-    const parsed = url.parse(targetUrl);
-    const reqOpts = {
-      protocol: parsed.protocol,
-      hostname: parsed.hostname,
-      port: parsed.port,
-      path: parsed.path,
-      method: options.method || 'GET',
-      headers: options.headers || {},
-      agent: options.agent,
-      timeout: 15000,
-    };
+    try {
+      const parsed = new URL(targetUrl);
+      const reqOpts = {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port,
+        path: parsed.pathname + parsed.search,
+        method: options.method || 'GET',
+        headers: options.headers || {},
+        agent: options.agent,
+        timeout: 15000,
+      };
 
-    const req = https.request(reqOpts, (res) => {
-      const chunks = [];
-      res.on('data', (chunk) => chunks.push(chunk));
-      res.on('end', () => {
-        const body = Buffer.concat(chunks).toString('utf8');
-        resolve({
-          status: res.statusCode,
-          ok: res.statusCode >= 200 && res.statusCode < 300,
-          text: async () => body,
+      const req = https.request(reqOpts, (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const body = Buffer.concat(chunks).toString('utf8');
+          resolve({
+            status: res.statusCode,
+            ok: res.statusCode >= 200 && res.statusCode < 300,
+            text: async () => body,
+          });
         });
       });
-    });
 
-    req.on('error', (err) => {
-      reject(err);
-    });
+      req.on('error', (err) => {
+        reject(err);
+      });
 
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error('Request timeout'));
-    });
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Request timeout'));
+      });
 
-    if (options.body) {
-      req.write(options.body);
+      if (options.body) {
+        req.write(options.body);
+      }
+      req.end();
+    } catch (e) {
+      reject(e);
     }
-    req.end();
   });
 }
 
@@ -145,7 +148,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { cookie, serviceId, link, quantity, apiToken, proxy } = req.body;
+    const parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    const { cookie, serviceId, link, quantity, apiToken, proxy } = parsedBody;
     if (!cookie || !serviceId || !link || !quantity) {
       return res.status(400).json({ error: 'Missing required fields: cookie, serviceId, link, quantity' });
     }
