@@ -1,0 +1,268 @@
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// HTML parsing function to scrape the order rows
+function parseOrdersHtml(html) {
+  const tableMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+  if (!tableMatch) return [];
+
+  const tbodyContent = tableMatch[1];
+  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const parsedOrders = [];
+  let rowMatch;
+
+  while ((rowMatch = rowRegex.exec(tbodyContent)) !== null) {
+    const rowHtml = rowMatch[1];
+    
+    // 1. Database ID
+    const dbIdMatch = rowHtml.match(/<td class="d-none">([\s\S]*?)<\/td>/i);
+    const dbId = dbIdMatch ? dbIdMatch[1].trim() : '';
+
+    // 2. Order Code (Mã đơn)
+    const orderIdMatch = rowHtml.match(/class="font-bold text-sm">([\s\S]*?)<\/span>/i);
+    const orderId = orderIdMatch ? orderIdMatch[1].trim() : '';
+
+    // 3. Status (Trạng thái)
+    const statusMatch = rowHtml.match(/class="badge badge-[^"]*">([\s\S]*?)<\/span>/i) ||
+                        rowHtml.match(/class="status-order-custom">[^<]*<span[^>]*>([\s\S]*?)<\/span>/i);
+    const status = statusMatch ? statusMatch[1].replace(/<[^>]*>/g, '').trim() : 'Không rõ';
+
+    // 4. Dates
+    const createdAtMatch = rowHtml.match(/Tạo đơn:\s*([0-9\-\s:]+)/i);
+    const createdAt = createdAtMatch ? createdAtMatch[1].trim() : '';
+    const updatedAtMatch = rowHtml.match(/Cập nhật gần nhất:[\s\S]*?([0-9\-\s:]+)/i);
+    const updatedAt = updatedAtMatch ? updatedAtMatch[1].trim() : '';
+
+    // 5. Service Name
+    const serviceNameMatch = rowHtml.match(/class="text-sm">([\s\S]*?)<\/span>/i);
+    let serviceName = serviceNameMatch ? serviceNameMatch[1].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() : '';
+
+    // 6. Link
+    const linkMatch = rowHtml.match(/href="([^"]*)"[^>]*class="d-flex"/i) || 
+                      rowHtml.match(/href="([^"]*)"/i); // fallback
+    const link = linkMatch ? linkMatch[1].trim() : '';
+
+    // 7. Payment (Tổng thanh toán)
+    const paymentMatch = rowHtml.match(/Tổng thanh toán:[\s\S]*?class="text-blue">([\s\S]*?)<\/span>/i) ||
+                         rowHtml.match(/Tổng thanh toán:[\s\S]*?>([\s\S]*?)<\/span>/i);
+    const charge = paymentMatch ? paymentMatch[1].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() : '0';
+
+    // 8. Progress (Số lượng, Bắt đầu, Đã chạy)
+    const qtyMatch = rowHtml.match(/Số lượng<\/span>:\s*([0-9]+)/i);
+    const quantity = qtyMatch ? qtyMatch[1].trim() : '0';
+    
+    const startMatch = rowHtml.match(/Bắt đầu<\/span>:\s*([0-9]+)/i);
+    const startCount = startMatch ? startMatch[1].trim() : '0';
+
+    const progressMatch = rowHtml.match(/Đã\s*chạy<\/span>:\s*([0-9]+)/i) || 
+                          rowHtml.match(/Còn\s*lại<\/span>:\s*([0-9]+)/i);
+    const runCount = progressMatch ? progressMatch[1].trim() : '0';
+
+    parsedOrders.push({
+      dbId,
+      orderId,
+      status,
+      createdAt,
+      updatedAt,
+      serviceName,
+      link,
+      charge,
+      quantity,
+      startCount,
+      runCount
+    });
+  }
+
+  return parsedOrders;
+}
+
+// Place order via the actual like.vn web API (same request the browser sends after 120s countdown)
+async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken) {
+  // Determine correct endpoint & server_order based on serviceId
+  // SV4 (1385) = Like TikTok, SV5 (8559) = View TikTok
+  const isLike = String(serviceId) === '1385';
+  const pagePath = isLike ? 'https://like.vn/mua-like-tiktok' : 'https://like.vn/mua-view-tiktok';
+  const endpoint = isLike
+    ? 'https://like.vn/api/mua-like-tiktok/order'
+    : 'https://like.vn/api/mua-view-tiktok/order';
+  const serverOrder = isLike ? '4' : '5'; // SV4 for like, SV5 for view
+
+  // Step 1: Fetch the page to extract the real <meta name="csrf-token"> value
+  let csrfToken = '';
+  try {
+    const pageResp = await fetch(pagePath, {
+      headers: {
+        'Cookie': cookie,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      }
+    });
+    const html = await pageResp.text();
+    const metaMatch = html.match(/<meta name="csrf-token" content="([^"]+)"/i);
+    if (metaMatch) {
+      csrfToken = metaMatch[1];
+      console.log(`[custom-order] Extracted CSRF token: ${csrfToken.slice(0, 20)}...`);
+    } else {
+      console.warn('[custom-order] Could not find csrf-token meta tag in page.');
+    }
+  } catch(e) {
+    console.error('[custom-order] Failed to fetch order page for CSRF:', e.message);
+  }
+
+  // Step 2: Submit the order
+  const formBody = new URLSearchParams({
+    objectId: link,
+    server_order: serverOrder,
+    free: '1',
+    amount: String(quantity),
+    note: '',
+  }).toString();
+
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+    'Cookie': cookie,
+    'X-CSRF-Token': csrfToken,
+    'X-Requested-With': 'XMLHttpRequest',
+    'Referer': pagePath,
+    'Origin': 'https://like.vn',
+    'Accept': 'application/json, text/javascript, */*; q=0.01',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  };
+  if (apiToken) headers['api-token'] = apiToken;
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: formBody,
+  });
+
+  const text = await response.text();
+  try { return { status: response.status, data: JSON.parse(text) }; }
+  catch(e) { return { status: response.status, data: { error: text.slice(0, 300) } }; }
+}
+
+
+// Custom Vite server plugin to handle the scraped history
+const historyProxyPlugin = () => ({
+  name: 'history-proxy',
+  configureServer(server) {
+    // --- Endpoint: Place order via cookie ---
+    server.middlewares.use('/custom-order', (req, res, next) => {
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+          try {
+            const parsed = JSON.parse(body || '{}');
+            const { cookie, serviceId, link, quantity, apiToken } = parsed;
+            if (!cookie || !serviceId || !link || !quantity) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Missing required fields: cookie, serviceId, link, quantity' }));
+              return;
+            }
+            console.log(`[custom-order] Placing order: service=${serviceId}, qty=${quantity}, link=${link.slice(0,60)}`);
+            const result = await placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken);
+            console.log(`[custom-order] Response status: ${result.status}`, JSON.stringify(result.data).slice(0, 200));
+            res.writeHead(result.status < 500 ? 200 : 500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result.data));
+          } catch (err) {
+            console.error('[custom-order] Error:', err);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+      } else {
+        next();
+      }
+    });
+
+    server.middlewares.use('/custom-history', (req, res, next) => {
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+          try {
+            const parsed = JSON.parse(body || '{}');
+            console.log('--- CUSTOM HISTORY PROXY REQUEST ---');
+            console.log('Parsed body keys:', Object.keys(parsed));
+            
+            // Accept both 'cookie' and 'cookies' to be safe
+            const userCookies = parsed.cookie || parsed.cookies;
+            console.log('User cookies length:', userCookies ? userCookies.length : 0);
+            console.log('User Agent header:', req.headers['user-agent']);
+            
+            if (!userCookies) {
+              console.log('Error: Cookie string is empty or undefined!');
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Cookie string is required' }));
+              return;
+            }
+
+            const response = await fetch('https://like.vn/history/orders', {
+              headers: {
+                'Cookie': userCookies,
+                'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                'Referer': 'https://like.vn/'
+              }
+            });
+
+            console.log('Like.vn Response Status:', response.status);
+            console.log('Like.vn Response Headers:', Object.fromEntries(response.headers.entries()));
+
+            const html = await response.text();
+            console.log('Like.vn Response Body Snippet:', html.slice(0, 500));
+            
+            const orders = parseOrdersHtml(html);
+
+            if (orders.length === 0) {
+              if (html.includes('<title>Đăng nhập') || html.includes('name="username"') || html.includes('/login')) {
+                console.log('Unauthorized: Login page elements detected!');
+                res.writeHead(401, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Cookie không hợp lệ hoặc đã hết hạn. Vui lòng cập nhật Cookie trong mục Cấu hình!' }));
+                return;
+              }
+            }
+
+            if (!response.ok) {
+              throw new Error(`Failed to fetch orders from Like.vn: ${response.statusText}`);
+            }
+
+            // Sort logic: Keep "Đang chạy", "Đang xử lý", "Chờ duyệt" on top
+            orders.sort((a, b) => {
+              const activeStatuses = ['đang chạy', 'đang xử lý', 'chờ duyệt', 'đang chạy...'];
+              const isAActive = activeStatuses.includes(a.status.toLowerCase());
+              const isBActive = activeStatuses.includes(b.status.toLowerCase());
+              
+              if (isAActive && !isBActive) return -1;
+              if (!isAActive && isBActive) return 1;
+              return 0; // Keep date sorting
+            });
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(orders));
+          } catch (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: `Lỗi máy chủ proxy: ${err.message}` }));
+          }
+        });
+      } else {
+        next();
+      }
+    });
+  }
+});
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react(), historyProxyPlugin()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://like.vn',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
+})
