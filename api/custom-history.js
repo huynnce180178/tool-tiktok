@@ -1,3 +1,8 @@
+import https from 'https';
+import url from 'url';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { SocksProxyAgent } from 'socks-proxy-agent';
+
 // HTML parsing function to scrape the order rows
 function parseOrdersHtml(html) {
   const tableMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
@@ -73,6 +78,62 @@ function parseOrdersHtml(html) {
   return parsedOrders;
 }
 
+function getAgent(proxyUrl) {
+  if (!proxyUrl) return undefined;
+  try {
+    if (proxyUrl.startsWith('socks')) {
+      return new SocksProxyAgent(proxyUrl);
+    }
+    return new HttpsProxyAgent(proxyUrl);
+  } catch (e) {
+    console.error('[custom-history] Proxy agent error:', e.message);
+    return undefined;
+  }
+}
+
+function makeRequest(targetUrl, options = {}) {
+  return new Promise((resolve, reject) => {
+    const parsed = url.parse(targetUrl);
+    const reqOpts = {
+      protocol: parsed.protocol,
+      hostname: parsed.hostname,
+      port: parsed.port,
+      path: parsed.path,
+      method: options.method || 'GET',
+      headers: options.headers || {},
+      agent: options.agent,
+      timeout: 15000,
+    };
+
+    const req = https.request(reqOpts, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
+        resolve({
+          status: res.statusCode,
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          text: async () => body,
+        });
+      });
+    });
+
+    req.on('error', (err) => {
+      reject(err);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+
+    if (options.body) {
+      req.write(options.body);
+    }
+    req.end();
+  });
+}
+
 export default async function handler(req, res) {
   // Set CORS headers for Vercel
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -94,17 +155,25 @@ export default async function handler(req, res) {
 
   try {
     const userCookies = req.body.cookie || req.body.cookies;
+    const proxyUrl = req.body.proxy;
+
     if (!userCookies) {
       return res.status(400).json({ error: 'Cookie string is required' });
     }
 
-    const response = await fetch('https://like.vn/history/orders', {
+    const agent = getAgent(proxyUrl);
+    if (proxyUrl) {
+      console.log(`[custom-history] Using proxy: ${proxyUrl.replace(/:[^:@]+@/, ':***@')}`);
+    }
+
+    const response = await makeRequest('https://like.vn/history/orders', {
       headers: {
         'Cookie': userCookies,
         'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
         'Referer': 'https://like.vn/'
-      }
+      },
+      agent
     });
 
     const html = await response.text();
@@ -117,7 +186,7 @@ export default async function handler(req, res) {
     }
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch orders from Like.vn: ${response.statusText}`);
+      throw new Error(`Failed to fetch orders from Like.vn: ${response.status}`);
     }
 
     // Sort logic: Keep "Đang chạy", "Đang xử lý", "Chờ duyệt" on top

@@ -50,6 +50,9 @@ export default function App() {
     return localStorage.getItem('like_vn_cookie') || DEFAULT_COOKIE;
   });
   const [showSettings, setShowSettings] = useState(false);
+  const [proxyUrl, setProxyUrl] = useState(() => {
+    return localStorage.getItem('like_vn_proxy') || '';
+  });
   const [balance, setBalance] = useState(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [apiConnectionOk, setApiConnectionOk] = useState(null);
@@ -106,6 +109,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('like_vn_cookie', cookieString);
   }, [cookieString]);
+
+  useEffect(() => {
+    localStorage.setItem('like_vn_proxy', proxyUrl);
+  }, [proxyUrl]);
 
   // Sync recent orders to localstorage
   useEffect(() => {
@@ -193,7 +200,7 @@ export default function App() {
       const response = await fetch('/api/custom-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cookie: cookieString })
+        body: JSON.stringify({ cookie: cookieString, proxy: proxyUrl })
       });
 
       const data = await response.json();
@@ -224,7 +231,8 @@ export default function App() {
           apiToken: apiKey,
           serviceId: serviceId,
           link: link,
-          quantity: qty
+          quantity: qty,
+          proxy: proxyUrl
         })
       });
       const data = await response.json();
@@ -698,6 +706,19 @@ export default function App() {
               >
                 Tải lịch sử
               </button>
+            </div>
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <label className="form-label">Proxy HTTP/SOCKS5 (Tùy chọn - Tránh Cloudflare 403 khi deploy Vercel)</label>
+              <input
+                type="text"
+                className="form-input"
+                value={proxyUrl}
+                onChange={(e) => setProxyUrl(e.target.value)}
+                placeholder="Ví dụ: http://ip:port hoặc http://user:pass@ip:port hoặc socks5://ip:port..."
+              />
+              <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '0.25rem', fontSize: '0.75rem' }}>
+                Khuyên dùng proxy Việt Nam (ví dụ mua từ tinproxy, proxy.shop, v.v.). Bỏ trống nếu chạy ở máy cá nhân (Local) không bị chặn.
+              </small>
             </div>
           </div>
         </div>

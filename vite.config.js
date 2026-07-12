@@ -1,5 +1,9 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import https from 'https';
+import url from 'url';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { SocksProxyAgent } from 'socks-proxy-agent';
 
 // HTML parsing function to scrape the order rows
 function parseOrdersHtml(html) {
@@ -76,10 +80,64 @@ function parseOrdersHtml(html) {
   return parsedOrders;
 }
 
+function getAgent(proxyUrl) {
+  if (!proxyUrl) return undefined;
+  try {
+    if (proxyUrl.startsWith('socks')) {
+      return new SocksProxyAgent(proxyUrl);
+    }
+    return new HttpsProxyAgent(proxyUrl);
+  } catch (e) {
+    console.error('[vite-proxy] Proxy agent error:', e.message);
+    return undefined;
+  }
+}
+
+function makeRequest(targetUrl, options = {}) {
+  return new Promise((resolve, reject) => {
+    const parsed = url.parse(targetUrl);
+    const reqOpts = {
+      protocol: parsed.protocol,
+      hostname: parsed.hostname,
+      port: parsed.port,
+      path: parsed.path,
+      method: options.method || 'GET',
+      headers: options.headers || {},
+      agent: options.agent,
+      timeout: 15000,
+    };
+
+    const req = https.request(reqOpts, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
+        resolve({
+          status: res.statusCode,
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          text: async () => body,
+        });
+      });
+    });
+
+    req.on('error', (err) => {
+      reject(err);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+
+    if (options.body) {
+      req.write(options.body);
+    }
+    req.end();
+  });
+}
+
 // Place order via the actual like.vn web API (same request the browser sends after 120s countdown)
-async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken) {
-  // Determine correct endpoint & server_order based on serviceId
-  // SV4 (1385) = Like TikTok, SV5 (8559) = View TikTok
+async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, proxyUrl) {
   const isLike = String(serviceId) === '1385';
   const pagePath = isLike ? 'https://like.vn/mua-like-tiktok' : 'https://like.vn/mua-view-tiktok';
   const endpoint = isLike
@@ -87,21 +145,24 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken) 
     : 'https://like.vn/api/mua-view-tiktok/order';
   const serverOrder = isLike ? '4' : '5'; // SV4 for like, SV5 for view
 
+  const agent = getAgent(proxyUrl);
+
   // Step 1: Fetch the page to extract the real <meta name="csrf-token"> value
   let csrfToken = '';
   try {
-    const pageResp = await fetch(pagePath, {
+    const pageResp = await makeRequest(pagePath, {
       headers: {
         'Cookie': cookie,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      }
+      },
+      agent
     });
     const html = await pageResp.text();
     const metaMatch = html.match(/<meta name="csrf-token" content="([^"]+)"/i);
     if (metaMatch) {
       csrfToken = metaMatch[1];
-      console.log(`[custom-order] Extracted CSRF token: ${csrfToken.slice(0, 20)}...`);
+      console.log(`[custom-order] Extracted CSRF token: ${csrfToken}`);
     } else {
       console.warn('[custom-order] Could not find csrf-token meta tag in page.');
     }
@@ -130,17 +191,17 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken) 
   };
   if (apiToken) headers['api-token'] = apiToken;
 
-  const response = await fetch(endpoint, {
+  const response = await makeRequest(endpoint, {
     method: 'POST',
     headers,
     body: formBody,
+    agent
   });
 
   const text = await response.text();
   try { return { status: response.status, data: JSON.parse(text) }; }
   catch(e) { return { status: response.status, data: { error: text.slice(0, 300) } }; }
 }
-
 
 // Custom Vite server plugin to handle the scraped history
 const historyProxyPlugin = () => ({
@@ -154,14 +215,14 @@ const historyProxyPlugin = () => ({
         req.on('end', async () => {
           try {
             const parsed = JSON.parse(body || '{}');
-            const { cookie, serviceId, link, quantity, apiToken } = parsed;
+            const { cookie, serviceId, link, quantity, apiToken, proxy } = parsed;
             if (!cookie || !serviceId || !link || !quantity) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Missing required fields: cookie, serviceId, link, quantity' }));
               return;
             }
             console.log(`[custom-order] Placing order: service=${serviceId}, qty=${quantity}, link=${link.slice(0,60)}`);
-            const result = await placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken);
+            const result = await placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, proxy);
             console.log(`[custom-order] Response status: ${result.status}`, JSON.stringify(result.data).slice(0, 200));
             res.writeHead(result.status < 500 ? 200 : 500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(result.data));
@@ -186,8 +247,8 @@ const historyProxyPlugin = () => ({
             console.log('--- CUSTOM HISTORY PROXY REQUEST ---');
             console.log('Parsed body keys:', Object.keys(parsed));
             
-            // Accept both 'cookie' and 'cookies' to be safe
             const userCookies = parsed.cookie || parsed.cookies;
+            const proxyUrl = parsed.proxy;
             console.log('User cookies length:', userCookies ? userCookies.length : 0);
             console.log('User Agent header:', req.headers['user-agent']);
             
@@ -198,18 +259,18 @@ const historyProxyPlugin = () => ({
               return;
             }
 
-            const response = await fetch('https://like.vn/history/orders', {
+            const agent = getAgent(proxyUrl);
+            const response = await makeRequest('https://like.vn/history/orders', {
               headers: {
                 'Cookie': userCookies,
                 'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
                 'Referer': 'https://like.vn/'
-              }
+              },
+              agent
             });
 
             console.log('Like.vn Response Status:', response.status);
-            console.log('Like.vn Response Headers:', Object.fromEntries(response.headers.entries()));
-
             const html = await response.text();
             console.log('Like.vn Response Body Snippet:', html.slice(0, 500));
             
@@ -225,7 +286,7 @@ const historyProxyPlugin = () => ({
             }
 
             if (!response.ok) {
-              throw new Error(`Failed to fetch orders from Like.vn: ${response.statusText}`);
+              throw new Error(`Failed to fetch orders from Like.vn: ${response.status}`);
             }
 
             // Sort logic: Keep "Đang chạy", "Đang xử lý", "Chờ duyệt" on top
@@ -236,7 +297,7 @@ const historyProxyPlugin = () => ({
               
               if (isAActive && !isBActive) return -1;
               if (!isAActive && isBActive) return 1;
-              return 0; // Keep date sorting
+              return 0;
             });
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -265,4 +326,4 @@ export default defineConfig({
       }
     }
   }
-})
+});
