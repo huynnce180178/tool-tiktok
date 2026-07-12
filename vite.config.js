@@ -147,7 +147,7 @@ const historyProxyPlugin = () => ({
   name: 'history-proxy',
   configureServer(server) {
     // --- Endpoint: Place order via cookie ---
-    server.middlewares.use('/custom-order', (req, res, next) => {
+    server.middlewares.use('/api/custom-order', (req, res, next) => {
       if (req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk; });
@@ -176,7 +176,7 @@ const historyProxyPlugin = () => ({
       }
     });
 
-    server.middlewares.use('/custom-history', (req, res, next) => {
+    server.middlewares.use('/api/custom-history', (req, res, next) => {
       if (req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk; });

@@ -3,9 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 // ==========================================
 // CẤU HÌNH THỜI GIAN BOT AUTO QUÉT TẠI ĐÂY
 // - Mặc định hiện tại: 20 giây để test nhanh.
-// - Để đổi lại thành 3 phút, hãy sửa số 20 thành 180.
+// - Để đổi lại thành 7 phút, hãy sửa số 20 thành 420.
 // ==========================================
-const AUTO_CHECK_INTERVAL_SECONDS = 20;
+const AUTO_CHECK_INTERVAL_SECONDS = 420;
 
 // Free services configuration on Like.vn
 const INITIAL_SERVICES = {
@@ -71,7 +71,7 @@ export default function App() {
   const [autoTimeWindow, setAutoTimeWindow] = useState('2h'); // '1h', '2h', '4h', '6h', '12h', '24h', 'all'
   const [countdown, setCountdown] = useState(0); // seconds left until next check
   const [logs, setLogs] = useState([]);
-  
+
   // Refs for scrolling logs and countdown interval
   const logEndRef = useRef(null);
   const countdownIntervalRef = useRef(null);
@@ -190,7 +190,7 @@ export default function App() {
     if (!cookieString) return [];
     if (!silent) setHistoryLoading(true);
     try {
-      const response = await fetch('/custom-history', {
+      const response = await fetch('/api/custom-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cookie: cookieString })
@@ -216,7 +216,7 @@ export default function App() {
   // Helper to place order via COOKIE (web form) - API doesn't support free servers SV4/SV5
   const placeOrderCookie = async (serviceId, link, qty) => {
     try {
-      const response = await fetch('/custom-order', {
+      const response = await fetch('/api/custom-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -278,12 +278,12 @@ export default function App() {
     showAlert('info', 'Đang gửi yêu cầu tạo đơn...');
 
     const data = await placeOrderCookie(selectedServer.id, tiktokLink, orderQty);
-    
+
     // Cookie-based response: success if no error field or has order/message
     if (data && !data.error) {
       const orderId = data.order || data.id || data.order_id || 'N/A';
       showAlert('success', `Tạo đơn thành công! ID Đơn: ${orderId}`);
-      
+
       const newOrder = {
         orderId: data.order || data.id || data.order_id || 'N/A',
         serviceId: selectedServer.id,
@@ -293,7 +293,7 @@ export default function App() {
         date: new Date().toLocaleString('vi-VN'),
         status: 'Pending'
       };
-      
+
       setRecentOrders(prev => [newOrder, ...prev]);
       fetchBalance();
       setTimeout(() => fetchScrapedHistory(true), 1500);
@@ -325,8 +325,8 @@ export default function App() {
 
       if (data && !data.error) {
         setStatusResult({ orderId: targetId, ...data });
-        
-        setRecentOrders(prev => 
+
+        setRecentOrders(prev =>
           prev.map(ord => ord.orderId.toString() === targetId.toString() ? { ...ord, status: data.status || ord.status } : ord)
         );
 
@@ -359,9 +359,10 @@ export default function App() {
   const [autoPhase, setAutoPhase] = useState('checking'); // for UI display
   const [creationCountdown, setCreationCountdown] = useState(0); // 120s creation countdown
   const creationIntervalRef = useRef(null);
+  const nextTypeRef = useRef('like'); // alternates: 'like' -> 'view' -> 'like' ...
 
   const ORDER_CREATION_WAIT = 120; // seconds to wait before sending order (like.vn requirement)
-  
+
   // Extract TikTok video ID from any URL format for comparison
   // Handles: /video/123, /analytics/123, ?item_id=123, etc.
   const extractVideoId = (url) => {
@@ -386,53 +387,58 @@ export default function App() {
   };
 
   // Send the actual order after 120s countdown
-  const executeOrderCreation = async (link, needsLike, needsView) => {
+  // Uses nextTypeRef to alternate Like -> View -> Like...
+  const executeOrderCreation = async (link) => {
     addLog('Het dem nguoc. Bat dau gui yeu cau tao don...');
-    
-    if (needsLike) {
-      addLog('Dang tao don Like mien phi (SV4)...');
-      const likeResponse = await placeOrderCookie('1385', link, 10);
-      if (likeResponse && likeResponse.status === 'success') {
-        addLog(`TAO DON LIKE THANH CONG! ${likeResponse.message || ''}`);
-        fetchBalance();
-      } else {
-        const errMsg = likeResponse?.message || likeResponse?.error || JSON.stringify(likeResponse).slice(0, 100);
-        addLog(`That bai tao don Like: ${errMsg}`);
-      }
-    }
+    const type = nextTypeRef.current; // 'like' or 'view'
+    addLog(`Loai don: ${type === 'like' ? 'Like (SV4)' : 'View (SV5)'}`);
 
-    if (needsView) {
-      addLog('Dang tao don View mien phi (SV5)...');
-      const viewResponse = await placeOrderCookie('8559', link, 100);
-      if (viewResponse && viewResponse.status === 'success') {
-        addLog(`TAO DON VIEW THANH CONG! ${viewResponse.message || ''}`);
+    if (type === 'like') {
+      addLog('Dang tao don Like mien phi (SV4)...');
+      const res = await placeOrderCookie('1385', link, 10);
+      if (res && res.status === 'success') {
+        addLog(`TAO DON LIKE THANH CONG! ${res.message || ''}`);
+        nextTypeRef.current = 'view'; // next time create View
         fetchBalance();
       } else {
-        const errMsg = viewResponse?.message || viewResponse?.error || JSON.stringify(viewResponse).slice(0, 100);
+        const errMsg = res?.message || res?.error || JSON.stringify(res).slice(0, 100);
+        addLog(`That bai tao don Like: ${errMsg}`);
+        // Don't flip on failure - retry same type next time
+      }
+    } else {
+      addLog('Dang tao don View mien phi (SV5)...');
+      const res = await placeOrderCookie('8559', link, 100);
+      if (res && res.status === 'success') {
+        addLog(`TAO DON VIEW THANH CONG! ${res.message || ''}`);
+        nextTypeRef.current = 'like'; // next time create Like
+        fetchBalance();
+      } else {
+        const errMsg = res?.message || res?.error || JSON.stringify(res).slice(0, 100);
         addLog(`That bai tao don View: ${errMsg}`);
+        // Don't flip on failure - retry same type next time
       }
     }
 
     // Refresh history after order creation
     setTimeout(() => fetchScrapedHistory(true), 2000);
-    addLog(`Hoan tat tao don. Cho ${AUTO_CHECK_INTERVAL_SECONDS} giay de quet kiem tra lai...`);
-    
+    addLog(`Hoan tat. Don tiep theo se la: ${nextTypeRef.current === 'like' ? 'Like' : 'View'}. Cho ${AUTO_CHECK_INTERVAL_SECONDS}s...`);
+
     // Switch back to checking phase
     autoPhaseRef.current = 'checking';
     setAutoPhase('checking');
     setCountdown(AUTO_CHECK_INTERVAL_SECONDS);
   };
 
-  // Start the 120s creation countdown, then place orders
-  const startCreationCountdown = (link, needsLike, needsView) => {
+  // Start the 120s creation countdown, then place the next order type
+  const startCreationCountdown = (link) => {
     autoPhaseRef.current = 'creating';
     setAutoPhase('creating');
     setCreationCountdown(ORDER_CREATION_WAIT);
-    const types = [needsLike && 'Like', needsView && 'View'].filter(Boolean).join(' + ');
-    addLog(`Can tao: ${types}. Bat dau dem nguoc ${ORDER_CREATION_WAIT}s (like.vn yeu cau doi)...`);
+    const type = nextTypeRef.current === 'like' ? 'Like (SV4)' : 'View (SV5)';
+    addLog(`Chuan bi tao don: ${type}. Dem nguoc ${ORDER_CREATION_WAIT}s (like.vn yeu cau doi)...`);
 
     if (creationIntervalRef.current) clearInterval(creationIntervalRef.current);
-    
+
     let remaining = ORDER_CREATION_WAIT;
     creationIntervalRef.current = setInterval(async () => {
       remaining -= 1;
@@ -440,7 +446,7 @@ export default function App() {
       if (remaining <= 0) {
         clearInterval(creationIntervalRef.current);
         creationIntervalRef.current = null;
-        await executeOrderCreation(link, needsLike, needsView);
+        await executeOrderCreation(link);
       }
     }, 1000);
   };
@@ -449,7 +455,7 @@ export default function App() {
     // Prevent concurrent executions
     if (isRunningCheckRef.current) return;
     if (autoPhaseRef.current === 'creating') return;
-    
+
     isRunningCheckRef.current = true;
     try {
       if (!autoTiktokLink) { addLog('Loi Auto: Link TikTok trong!'); stopAutoBot(); return; }
@@ -490,7 +496,7 @@ export default function App() {
           clearInterval(countdownIntervalRef.current);
           countdownIntervalRef.current = null;
         }
-        startCreationCountdown(autoTiktokLink, true, true);
+        startCreationCountdown(autoTiktokLink);
         return;
       }
 
@@ -513,6 +519,7 @@ export default function App() {
     isRunningCheckRef.current = false;
     autoPhaseRef.current = 'checking';
     setAutoPhase('checking');
+    nextTypeRef.current = 'like'; // always start with Like on fresh run
     setIsAutoRunning(true);
     setLogs([]);
     addLog(`Khoi chay che do tu dong cho link: ${autoTiktokLink}`);
@@ -536,7 +543,7 @@ export default function App() {
       // Run immediately on start
       runAutoCheck();
       setCountdown(AUTO_CHECK_INTERVAL_SECONDS);
-      
+
       countdownIntervalRef.current = setInterval(() => {
         setCountdown(prev => {
           if (prev <= 1) {
@@ -577,7 +584,7 @@ export default function App() {
     const todayStr = new Date().toLocaleDateString('en-CA');
 
     return scrapedOrders.filter(order => {
-      const matchesSearch = 
+      const matchesSearch =
         order.orderId.toLowerCase().includes(historySearch.toLowerCase()) ||
         order.serviceName.toLowerCase().includes(historySearch.toLowerCase()) ||
         order.link.toLowerCase().includes(historySearch.toLowerCase());
@@ -590,7 +597,7 @@ export default function App() {
       }
 
       if (historyFilter === 'tất cả') return true;
-      
+
       const s = order.status.toLowerCase();
       if (historyFilter === 'đang xử lý') {
         return s.includes('đang chạy') || s.includes('đang xử lý') || s.includes('chờ duyệt');
@@ -613,17 +620,17 @@ export default function App() {
           <h1 className="brand-logo">TikTok Booster</h1>
           <span className="brand-tagline">Like.vn Free Buff Client</span>
         </div>
-        
+
         {/* Main Tabs */}
         <nav style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.25rem', borderRadius: '10px', border: '1px solid var(--panel-border)', margin: '0 1rem' }}>
-          <button 
+          <button
             className={`tab-btn ${mainNav === 'dashboard' ? 'active' : ''}`}
             onClick={() => setMainNav('dashboard')}
             style={{ minWidth: '120px' }}
           >
             Bảng điều khiển
           </button>
-          <button 
+          <button
             className={`tab-btn ${mainNav === 'history' ? 'active' : ''}`}
             onClick={() => {
               setMainNav('history');
@@ -636,9 +643,9 @@ export default function App() {
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button 
-            onClick={() => setShowSettings(!showSettings)} 
-            className="btn btn-outline" 
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="btn btn-outline"
             style={{ width: 'auto', padding: '0.5rem 0.85rem' }}
           >
             Cấu hình
@@ -659,16 +666,16 @@ export default function App() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="form-group">
               <label className="form-label">Like.vn API Token</label>
-              <input 
-                type="password" 
-                className="form-input" 
-                value={apiKey} 
-                onChange={(e) => setApiKey(e.target.value)} 
+              <input
+                type="password"
+                className="form-input"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
                 placeholder="Nhập API Token..."
               />
-              <button 
-                className="btn btn-outline" 
-                style={{ marginTop: '0.5rem', padding: '0.5rem' }} 
+              <button
+                className="btn btn-outline"
+                style={{ marginTop: '0.5rem', padding: '0.5rem' }}
                 onClick={fetchBalance}
               >
                 Cập nhật số dư
@@ -676,17 +683,17 @@ export default function App() {
             </div>
             <div className="form-group">
               <label className="form-label">Like.vn Session Cookies (Scraper)</label>
-              <textarea 
-                className="form-input" 
+              <textarea
+                className="form-input"
                 rows="4"
                 style={{ fontFamily: 'monospace', fontSize: '0.75rem', resize: 'vertical' }}
-                value={cookieString} 
+                value={cookieString}
                 onChange={(e) => setCookieString(e.target.value)}
                 placeholder="Nhập chuỗi Cookie..."
               />
-              <button 
-                className="btn btn-outline" 
-                style={{ marginTop: '0.5rem', padding: '0.5rem' }} 
+              <button
+                className="btn btn-outline"
+                style={{ marginTop: '0.5rem', padding: '0.5rem' }}
                 onClick={fetchScrapedHistory}
               >
                 Tải lịch sử
@@ -712,13 +719,13 @@ export default function App() {
             <div className="card">
               {/* Form Tab selectors */}
               <div className="tabs">
-                <button 
+                <button
                   className={`tab-btn ${activeTab === 'order' ? 'active' : ''}`}
                   onClick={() => setActiveTab('order')}
                 >
                   Tạo Đơn Hàng
                 </button>
-                <button 
+                <button
                   className={`tab-btn ${activeTab === 'auto' ? 'active' : ''}`}
                   onClick={() => setActiveTab('auto')}
                   style={{ position: 'relative' }}
@@ -726,7 +733,7 @@ export default function App() {
                   Bot Auto
                   {isAutoRunning && <span style={{ position: 'absolute', top: '-4px', right: '4px', width: '8px', height: '8px', background: '#ff0050', borderRadius: '50%', boxShadow: '0 0 8px #ff0050' }}></span>}
                 </button>
-                <button 
+                <button
                   className={`tab-btn ${activeTab === 'status' ? 'active' : ''}`}
                   onClick={() => setActiveTab('status')}
                 >
@@ -741,20 +748,20 @@ export default function App() {
                     <label className="form-label">Chọn Loại Dịch Vụ</label>
                     <div style={{ display: 'flex', gap: '1rem' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1, padding: '0.75rem', background: serviceType === 'like' ? 'rgba(255,0,127,0.1)' : 'rgba(255,255,255,0.02)', borderRadius: '8px', border: serviceType === 'like' ? '1px solid #ff007f' : '1px solid var(--panel-border)', justifyContent: 'center' }}>
-                        <input 
-                          type="radio" 
-                          name="service_cat" 
-                          checked={serviceType === 'like'} 
+                        <input
+                          type="radio"
+                          name="service_cat"
+                          checked={serviceType === 'like'}
                           onChange={() => setServiceType('like')}
                           style={{ accentColor: '#ff007f' }}
                         />
                         Tăng Tim (Likes)
                       </label>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', flex: 1, padding: '0.75rem', background: serviceType === 'view' ? 'rgba(0,242,254,0.1)' : 'rgba(255,255,255,0.02)', borderRadius: '8px', border: serviceType === 'view' ? '1px solid #00f2fe' : '1px solid var(--panel-border)', justifyContent: 'center' }}>
-                        <input 
-                          type="radio" 
-                          name="service_cat" 
-                          checked={serviceType === 'view'} 
+                        <input
+                          type="radio"
+                          name="service_cat"
+                          checked={serviceType === 'view'}
                           onChange={() => setServiceType('view')}
                           style={{ accentColor: '#00f2fe' }}
                         />
@@ -765,12 +772,12 @@ export default function App() {
 
                   <div className="form-group">
                     <label className="form-label">Nhập Link Video TikTok</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
+                    <input
+                      type="text"
+                      className="form-input"
                       value={tiktokLink}
                       onChange={(e) => setTiktokLink(e.target.value)}
-                      placeholder="https://www.tiktok.com/@username/video/..." 
+                      placeholder="https://www.tiktok.com/@username/video/..."
                       required
                     />
                   </div>
@@ -804,19 +811,19 @@ export default function App() {
                 <div>
                   <div className="form-group">
                     <label className="form-label">Nhập Link Video TikTok Chạy Auto</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
+                    <input
+                      type="text"
+                      className="form-input"
                       value={autoTiktokLink}
                       onChange={(e) => setAutoTiktokLink(e.target.value)}
-                      placeholder="https://www.tiktok.com/@username/video/..." 
+                      placeholder="https://www.tiktok.com/@username/video/..."
                       disabled={isAutoRunning}
                     />
                   </div>
 
                   <div className="form-group">
                     <label className="form-label">Mốc Thời Gian Kiểm Tra Đơn</label>
-                    <select 
+                    <select
                       className="form-select"
                       value={autoTimeWindow}
                       onChange={(e) => setAutoTimeWindow(e.target.value)}
@@ -874,16 +881,16 @@ export default function App() {
                   <div className="form-group">
                     <label className="form-label">Mã Đơn Hàng (Order ID)</label>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <input 
-                        type="text" 
-                        className="form-input" 
+                      <input
+                        type="text"
+                        className="form-input"
                         value={orderIdToCheck}
                         onChange={(e) => setOrderIdToCheck(e.target.value)}
-                        placeholder="Nhập mã đơn hàng..." 
+                        placeholder="Nhập mã đơn hàng..."
                       />
-                      <button 
-                        type="button" 
-                        className="btn btn-secondary" 
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
                         style={{ width: 'auto', padding: '0 1.5rem' }}
                         onClick={() => handleCheckStatus()}
                         disabled={checkingStatus}
@@ -932,7 +939,7 @@ export default function App() {
                   Đơn Hàng Vừa Tạo (Phiên Này)
                 </h2>
                 {recentOrders.length > 0 && (
-                  <button 
+                  <button
                     onClick={() => {
                       if (window.confirm('Xóa lịch sử phiên này?')) setRecentOrders([]);
                     }}
@@ -964,7 +971,7 @@ export default function App() {
                         <span className={getStatusBadgeClass(order.status)}>
                           {order.status}
                         </span>
-                        <button 
+                        <button
                           onClick={() => checkRecentOrderStatus(order.orderId)}
                           className="btn btn-outline"
                           style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', width: 'auto', borderRadius: '4px', marginTop: '0.25rem' }}
@@ -987,9 +994,9 @@ export default function App() {
               Danh Sách Đơn Hệ Thống (Like.vn)
             </h2>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
-                onClick={() => fetchScrapedHistory()} 
-                className="btn btn-secondary" 
+              <button
+                onClick={() => fetchScrapedHistory()}
+                className="btn btn-secondary"
                 style={{ width: 'auto', padding: '0.5rem 1rem' }}
                 disabled={historyLoading}
               >
@@ -1000,7 +1007,7 @@ export default function App() {
 
           {/* Filters & Search */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--panel-border)' }}>
-            
+
             {/* Scope selection: Today vs All */}
             <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(0,0,0,0.2)', padding: '0.2rem', borderRadius: '8px' }}>
               <button
@@ -1032,12 +1039,12 @@ export default function App() {
                 </button>
               ))}
             </div>
-            
+
             {/* Search Input */}
             <div style={{ flex: 1, maxWidth: '250px' }}>
-              <input 
-                type="text" 
-                className="form-input" 
+              <input
+                type="text"
+                className="form-input"
                 placeholder="Tìm Mã đơn, link..."
                 value={historySearch}
                 onChange={(e) => setHistorySearch(e.target.value)}
@@ -1084,10 +1091,10 @@ export default function App() {
                       <td style={{ padding: '1rem', maxWidth: '300px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                           <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{order.serviceName}</span>
-                          <a 
-                            href={order.link} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
+                          <a
+                            href={order.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             style={{ color: '#00f2fe', fontSize: '0.78rem', textDecoration: 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                             title={order.link}
                           >
@@ -1116,7 +1123,7 @@ export default function App() {
                       {/* 6. Action */}
                       <td style={{ padding: '1rem', textAlign: 'center' }}>
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                          <button 
+                          <button
                             onClick={() => checkRecentOrderStatus(order.orderId)}
                             className="btn btn-outline"
                             style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', width: 'auto', borderRadius: '4px' }}
@@ -1154,9 +1161,9 @@ export default function App() {
               </button>
             )}
             {logs.length > 0 && (
-              <button 
-                onClick={() => setLogs([])} 
-                className="btn btn-outline" 
+              <button
+                onClick={() => setLogs([])}
+                className="btn btn-outline"
                 style={{ width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
               >
                 Clear Logs
@@ -1164,8 +1171,8 @@ export default function App() {
             )}
           </div>
         </div>
-        <div 
-          className="log-panel" 
+        <div
+          className="log-panel"
           ref={logEndRef}
           style={{ height: '220px', overflowY: 'auto', background: '#0a0d14', border: '1px solid var(--panel-border)', borderRadius: '8px', padding: '1rem', fontFamily: 'monospace', fontSize: '0.82rem', color: '#10b981', display: 'flex', flexDirection: 'column', gap: '0.4rem', scrollBehavior: 'smooth' }}
         >
