@@ -58,6 +58,12 @@ export default function App() {
   const [proxyUrl, setProxyUrl] = useState(() => {
     return localStorage.getItem('like_vn_proxy') || '';
   });
+  const [serverConfig, setServerConfig] = useState({
+    isVercel: false,
+    hasServerProxy: false,
+    needsProxy: false,
+    loaded: false,
+  });
   const [balance, setBalance] = useState(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [_apiConnectionOk, setApiConnectionOk] = useState(null);
@@ -131,11 +137,30 @@ export default function App() {
     }
   }, [logs]);
 
+  // Kiểm tra proxy server (Vercel env) khi khởi động
+  useEffect(() => {
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((data) => {
+        setServerConfig({
+          isVercel: Boolean(data.isVercel),
+          hasServerProxy: Boolean(data.hasServerProxy),
+          needsProxy: Boolean(data.needsProxy),
+          loaded: true,
+        });
+      })
+      .catch(() => {
+        setServerConfig((prev) => ({ ...prev, loaded: true }));
+      });
+  }, []);
+
   // Load balance and scraped history on startup
   useEffect(() => {
     if (apiKey) fetchBalance();
     fetchScrapedHistory();
   }, []);
+
+  const hasActiveProxy = Boolean(proxyUrl) || serverConfig.hasServerProxy;
 
   // Alert helper
   const showAlert = (type, message) => {
@@ -673,6 +698,14 @@ export default function App() {
         </div>
       </header>
 
+      {serverConfig.loaded && serverConfig.needsProxy && !hasActiveProxy && (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,77,79,0.15)', border: '1px solid #ff4d4f', borderRadius: '8px', fontSize: '0.85rem' }}>
+          <strong style={{ color: '#ff4d4f' }}>Lỗi 403 Cloudflare:</strong> Vercel bị Like.vn chặn.
+          Bấm <button type="button" className="btn btn-outline" style={{ padding: '0.15rem 0.5rem', margin: '0 0.25rem' }} onClick={() => setShowSettings(true)}>Cấu hình</button>
+          và làm theo hướng dẫn thêm proxy (hoặc set <code>LIKE_VN_PROXY</code> trên Vercel).
+        </div>
+      )}
+
       {/* Settings Panel */}
       {showSettings && (
         <div className="card" style={{ marginBottom: '2rem', border: '1px solid #ff007f', boxShadow: 'var(--glow-pink)' }}>
@@ -714,7 +747,7 @@ export default function App() {
               </button>
             </div>
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <label className="form-label">Proxy HTTP/SOCKS5 (Tùy chọn - Tránh Cloudflare 403 khi deploy Vercel)</label>
+              <label className="form-label">Proxy HTTP/SOCKS5 (Bắt buộc khi deploy Vercel)</label>
               <input
                 type="text"
                 className="form-input"
@@ -723,11 +756,36 @@ export default function App() {
                 placeholder="Ví dụ: http://ip:port hoặc http://user:pass@ip:port hoặc socks5://ip:port..."
               />
               <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '0.25rem', fontSize: '0.75rem' }}>
-                Khuyên dùng proxy Việt Nam (ví dụ mua từ tinproxy, proxy.shop, v.v.). Bỏ trống nếu chạy ở máy cá nhân (Local) không bị chặn.
+                Khuyên dùng proxy Việt Nam (tinproxy, proxy.shop, v.v.). Bỏ trống nếu chạy local không bị chặn.
               </small>
-              {!proxyUrl && (
-                <div style={{ color: '#ffb703', fontSize: '0.8rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  ⚠️ Bạn chưa cấu hình Proxy. Khi deploy trên Vercel, Like.vn sẽ chặn IP mặc định của Vercel (gây lỗi 403 / 500). Vui lòng cấu hình Proxy Việt Nam để sử dụng đầy đủ chức năng!
+
+              {hasActiveProxy ? (
+                <div style={{ color: '#00f2fe', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  ✅ Proxy đã sẵn sàng
+                  {serverConfig.hasServerProxy && !proxyUrl && ' (dùng LIKE_VN_PROXY từ Vercel)'}
+                  {proxyUrl && ' (dùng proxy bạn nhập)'}
+                </div>
+              ) : serverConfig.isVercel ? (
+                <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', background: 'rgba(255,183,3,0.1)', border: '1px solid #ffb703', borderRadius: '8px', fontSize: '0.8rem', lineHeight: 1.6 }}>
+                  <strong style={{ color: '#ffb703' }}>⚠️ Vercel bị Cloudflare chặn — làm theo 1 trong 2 cách:</strong>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <strong>Cách 1 (khuyên dùng): Cấu hình trên Vercel Dashboard</strong>
+                    <ol style={{ margin: '0.35rem 0 0 1.25rem', padding: 0 }}>
+                      <li>Mua proxy HTTP/SOCKS5 Việt Nam</li>
+                      <li>Vào <a href="https://vercel.com/dashboard" target="_blank" rel="noreferrer" style={{ color: '#00f2fe' }}>vercel.com/dashboard</a> → chọn project <strong>tool-tiktok</strong></li>
+                      <li>Tab <strong>Settings</strong> → <strong>Environment Variables</strong></li>
+                      <li>Thêm biến: Name = <code>LIKE_VN_PROXY</code>, Value = <code>http://user:pass@ip:port</code></li>
+                      <li>Chọn môi trường <strong>Production</strong> → Save</li>
+                      <li>Tab <strong>Deployments</strong> → bấm <strong>Redeploy</strong> (không dùng cache)</li>
+                    </ol>
+                  </div>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <strong>Cách 2: Nhập proxy vào ô phía trên</strong> (lưu trên trình duyệt, mỗi máy phải nhập lại)
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color: '#ffb703', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  ⚠️ Chưa có proxy. Nếu gặp lỗi 403, hãy nhập proxy Việt Nam vào ô trên.
                 </div>
               )}
             </div>

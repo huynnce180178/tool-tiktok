@@ -1,79 +1,10 @@
-import https from 'https';
-import { HttpsProxyAgent } from 'https-proxy-agent';
-import { SocksProxyAgent } from 'socks-proxy-agent';
-
-function getAgent(proxyUrl) {
-  if (!proxyUrl) return undefined;
-  let formattedUrl = proxyUrl.trim();
-  
-  // Convert ip:port:user:pass to http://user:pass@ip:port
-  const parts = formattedUrl.split(':');
-  if (parts.length === 4) {
-    const [ip, port, user, pass] = parts;
-    if (!ip.includes('/') && !ip.includes('http') && !ip.includes('socks')) {
-      formattedUrl = `http://${user}:${pass}@${ip}:${port}`;
-    }
-  } else if (!formattedUrl.includes('://')) {
-    formattedUrl = `http://${formattedUrl}`;
-  }
-
-  try {
-    if (formattedUrl.startsWith('socks')) {
-      return new SocksProxyAgent(formattedUrl);
-    }
-    return new HttpsProxyAgent(formattedUrl);
-  } catch (e) {
-    console.error('[custom-order] Proxy agent error:', e.message);
-    return undefined;
-  }
-}
-
-function makeRequest(targetUrl, options = {}) {
-  return new Promise((resolve, reject) => {
-    try {
-      const parsed = new URL(targetUrl);
-      const reqOpts = {
-        protocol: parsed.protocol,
-        hostname: parsed.hostname,
-        port: parsed.port,
-        path: parsed.pathname + parsed.search,
-        method: options.method || 'GET',
-        headers: options.headers || {},
-        agent: options.agent,
-        timeout: 15000,
-      };
-
-      const req = https.request(reqOpts, (res) => {
-        const chunks = [];
-        res.on('data', (chunk) => chunks.push(chunk));
-        res.on('end', () => {
-          const body = Buffer.concat(chunks).toString('utf8');
-          resolve({
-            status: res.statusCode,
-            ok: res.statusCode >= 200 && res.statusCode < 300,
-            text: async () => body,
-          });
-        });
-      });
-
-      req.on('error', (err) => {
-        reject(err);
-      });
-
-      req.on('timeout', () => {
-        req.destroy();
-        reject(new Error('Request timeout'));
-      });
-
-      if (options.body) {
-        req.write(options.body);
-      }
-      req.end();
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
+import {
+  getAgent,
+  getCloudflareHint,
+  makeRequest,
+  maskProxyUrl,
+  resolveProxyUrl,
+} from './lib/proxy.js';
 
 async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, proxyUrl) {
   const isLike = String(serviceId) === '1385';
@@ -81,11 +12,10 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, 
   const endpoint = isLike
     ? 'https://like.vn/api/mua-like-tiktok/order'
     : 'https://like.vn/api/mua-view-tiktok/order';
-  const serverOrder = isLike ? '4' : '5'; // SV4 for like, SV5 for view
+  const serverOrder = isLike ? '4' : '5';
 
   const agent = getAgent(proxyUrl);
 
-  // Step 1: Fetch the page to extract the real <meta name="csrf-token"> value
   let csrfToken = '';
   try {
     const pageResp = await makeRequest(pagePath, {
@@ -94,7 +24,7 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, 
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
-      agent
+      agent,
     });
     const html = await pageResp.text();
     const metaMatch = html.match(/<meta name="csrf-token" content="([^"]+)"/i);
@@ -104,11 +34,10 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, 
     } else {
       console.warn('[custom-order] Could not find csrf-token meta tag in page.');
     }
-  } catch(e) {
+  } catch (e) {
     console.error('[custom-order] Failed to fetch order page for CSRF:', e.message);
   }
 
-  // Step 2: Submit the order
   const formBody = new URLSearchParams({
     objectId: link,
     server_order: serverOrder,
@@ -133,23 +62,25 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, 
     method: 'POST',
     headers,
     body: formBody,
-    agent
+    agent,
   });
 
   if (response.status === 403) {
     return {
       status: 403,
-      data: { error: 'Không thể kết nối (403 Cloudflare Blocked). Vui lòng cấu hình Proxy trong phần Cấu hình để vượt qua tường lửa!' }
+      data: { error: `Không thể kết nối (403 Cloudflare Blocked)${getCloudflareHint(proxyUrl)}` },
     };
   }
 
   const text = await response.text();
-  try { return { status: response.status, data: JSON.parse(text) }; }
-  catch(e) { return { status: response.status, data: { error: text.slice(0, 300) } }; }
+  try {
+    return { status: response.status, data: JSON.parse(text) };
+  } catch {
+    return { status: response.status, data: { error: text.slice(0, 300) } };
+  }
 }
 
 export default async function handler(req, res) {
-  // Set CORS headers for Vercel
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -174,7 +105,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields: cookie, serviceId, link, quantity' });
     }
 
-    const result = await placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, proxy);
+    const proxyUrl = resolveProxyUrl(proxy);
+    if (proxyUrl) {
+      console.log(`[custom-order] Using proxy: ${maskProxyUrl(proxyUrl)}`);
+    }
+
+    const result = await placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, proxyUrl);
     return res.status(result.status < 500 ? 200 : 500).json(result.data);
   } catch (err) {
     return res.status(500).json({ error: err.message });

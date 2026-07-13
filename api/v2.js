@@ -1,82 +1,12 @@
-import https from 'https';
-import { HttpsProxyAgent } from 'https-proxy-agent';
-import { SocksProxyAgent } from 'socks-proxy-agent';
-
-function getAgent(proxyUrl) {
-  if (!proxyUrl) return undefined;
-  let formattedUrl = proxyUrl.trim();
-  
-  // Convert ip:port:user:pass to http://user:pass@ip:port
-  const parts = formattedUrl.split(':');
-  if (parts.length === 4) {
-    const [ip, port, user, pass] = parts;
-    if (!ip.includes('/') && !ip.includes('http') && !ip.includes('socks')) {
-      formattedUrl = `http://${user}:${pass}@${ip}:${port}`;
-    }
-  } else if (!formattedUrl.includes('://')) {
-    formattedUrl = `http://${formattedUrl}`;
-  }
-
-  try {
-    if (formattedUrl.startsWith('socks')) {
-      return new SocksProxyAgent(formattedUrl);
-    }
-    return new HttpsProxyAgent(formattedUrl);
-  } catch (e) {
-    console.error('[v2-proxy] Proxy agent error:', e.message);
-    return undefined;
-  }
-}
-
-function makeRequest(targetUrl, options = {}) {
-  return new Promise((resolve, reject) => {
-    try {
-      const parsed = new URL(targetUrl);
-      const reqOpts = {
-        protocol: parsed.protocol,
-        hostname: parsed.hostname,
-        port: parsed.port,
-        path: parsed.pathname + parsed.search,
-        method: options.method || 'GET',
-        headers: options.headers || {},
-        agent: options.agent,
-        timeout: 15000,
-      };
-
-      const req = https.request(reqOpts, (res) => {
-        const chunks = [];
-        res.on('data', (chunk) => chunks.push(chunk));
-        res.on('end', () => {
-          const body = Buffer.concat(chunks).toString('utf8');
-          resolve({
-            status: res.statusCode,
-            ok: res.statusCode >= 200 && res.statusCode < 300,
-            text: async () => body,
-          });
-        });
-      });
-
-      req.on('error', (err) => {
-        reject(err);
-      });
-
-      req.on('timeout', () => {
-        req.destroy();
-        reject(new Error('Request timeout'));
-      });
-
-      if (options.body) {
-        req.write(options.body);
-      }
-      req.end();
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
+import {
+  getAgent,
+  getCloudflareHint,
+  makeRequest,
+  maskProxyUrl,
+  resolveProxyUrl,
+} from './lib/proxy.js';
 
 export default async function handler(req, res) {
-  // Set CORS headers for Vercel
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -96,15 +26,16 @@ export default async function handler(req, res) {
 
   try {
     const parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-    const proxyUrl = parsedBody.proxy;
-    
-    // Create a copy and remove proxy from the forward body
+    const proxyUrl = resolveProxyUrl(parsedBody.proxy);
+
     const forwardBody = { ...parsedBody };
     delete forwardBody.proxy;
 
     const agent = getAgent(proxyUrl);
     if (proxyUrl) {
-      console.log(`[v2-proxy] Using proxy: ${proxyUrl.replace(/:[^:@]+@/, ':***@')}`);
+      console.log(`[v2-proxy] Using proxy: ${maskProxyUrl(proxyUrl)}`);
+    } else if (process.env.VERCEL) {
+      console.warn('[v2-proxy] No proxy configured on Vercel — Cloudflare may block requests');
     }
 
     const response = await makeRequest('https://like.vn/api/v2', {
@@ -115,21 +46,21 @@ export default async function handler(req, res) {
         'Accept': 'application/json',
       },
       body: JSON.stringify(forwardBody),
-      agent
+      agent,
     });
 
     const text = await response.text();
     let data;
     try {
       data = JSON.parse(text);
-    } catch (e) {
+    } catch {
       data = { error: text.slice(0, 300) };
     }
 
     if (!response.ok) {
       let errorMsg = `Failed to fetch from Like.vn API v2: ${response.status}`;
       if (response.status === 403) {
-        errorMsg += ' (Cloudflare Blocked. Vui lòng cấu hình Proxy trong phần Cấu hình để khắc phục)';
+        errorMsg += getCloudflareHint(proxyUrl);
       }
       return res.status(response.status).json({ error: errorMsg, details: data });
     }
