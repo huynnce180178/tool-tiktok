@@ -573,7 +573,7 @@ export default function App() {
 
   // Helper to format currency
   const formatCurrency = (val) => {
-    if (val === null || val === undefined) return 'Đang tải...';
+    if (val === null || val === undefined) return '0 ₫';
     const cleanVal = typeof val === 'string' ? val.replace(/[^\d]/g, '') : val;
     const num = Number(cleanVal);
     if (isNaN(num)) return val;
@@ -662,8 +662,8 @@ export default function App() {
           </button>
           <div className="balance-box" style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Số dư:</span>
-            <strong style={{ color: '#00f2fe' }}>
-              {balanceLoading ? 'Đang tải...' : formatCurrency(balance)}
+            <strong style={{ color: balance === null && _apiConnectionOk === false ? '#ff4d4f' : '#00f2fe' }}>
+              {balanceLoading ? 'Đang tải...' : (balance === null && _apiConnectionOk === false ? 'Lỗi kết nối' : formatCurrency(balance))}
             </strong>
           </div>
         </div>
@@ -721,6 +721,11 @@ export default function App() {
               <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '0.25rem', fontSize: '0.75rem' }}>
                 Khuyên dùng proxy Việt Nam (ví dụ mua từ tinproxy, proxy.shop, v.v.). Bỏ trống nếu chạy ở máy cá nhân (Local) không bị chặn.
               </small>
+              {!proxyUrl && (
+                <div style={{ color: '#ffb703', fontSize: '0.8rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  ⚠️ Bạn chưa cấu hình Proxy. Khi deploy trên Vercel, Like.vn sẽ chặn IP mặc định của Vercel (gây lỗi 403 / 500). Vui lòng cấu hình Proxy Việt Nam để sử dụng đầy đủ chức năng!
+                </div>
+              )}
             </div>
           </div>
         </div>
