@@ -4,11 +4,24 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 
 function getAgent(proxyUrl) {
   if (!proxyUrl) return undefined;
-  try {
-    if (proxyUrl.startsWith('socks')) {
-      return new SocksProxyAgent(proxyUrl);
+  let formattedUrl = proxyUrl.trim();
+  
+  // Convert ip:port:user:pass to http://user:pass@ip:port
+  const parts = formattedUrl.split(':');
+  if (parts.length === 4) {
+    const [ip, port, user, pass] = parts;
+    if (!ip.includes('/') && !ip.includes('http') && !ip.includes('socks')) {
+      formattedUrl = `http://${user}:${pass}@${ip}:${port}`;
     }
-    return new HttpsProxyAgent(proxyUrl);
+  } else if (!formattedUrl.includes('://')) {
+    formattedUrl = `http://${formattedUrl}`;
+  }
+
+  try {
+    if (formattedUrl.startsWith('socks')) {
+      return new SocksProxyAgent(formattedUrl);
+    }
+    return new HttpsProxyAgent(formattedUrl);
   } catch (e) {
     console.error('[custom-order] Proxy agent error:', e.message);
     return undefined;
