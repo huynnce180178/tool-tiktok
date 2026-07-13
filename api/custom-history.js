@@ -190,7 +190,11 @@ export default async function handler(req, res) {
     }
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch orders from Like.vn: ${response.status}`);
+      let errorMsg = `Failed to fetch orders from Like.vn: ${response.status}`;
+      if (response.status === 403) {
+        errorMsg += ' (Cloudflare Blocked. Vui lòng cấu hình Proxy trong phần Cấu hình để vượt qua tường lửa)';
+      }
+      throw new Error(errorMsg);
     }
 
     // Sort logic: Keep "Đang chạy", "Đang xử lý", "Chờ duyệt" on top

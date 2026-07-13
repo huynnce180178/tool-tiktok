@@ -207,6 +207,61 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, 
 const historyProxyPlugin = () => ({
   name: 'history-proxy',
   configureServer(server) {
+    // --- Endpoint: API v2 Proxy ---
+    server.middlewares.use('/api/v2', (req, res, next) => {
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+          try {
+            const parsed = JSON.parse(body || '{}');
+            const proxyUrl = parsed.proxy;
+
+            const forwardBody = { ...parsed };
+            delete forwardBody.proxy;
+
+            const agent = getAgent(proxyUrl);
+            const response = await makeRequest('https://like.vn/api/v2', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify(forwardBody),
+              agent
+            });
+
+            const text = await response.text();
+            let data;
+            try {
+              data = JSON.parse(text);
+            } catch (e) {
+              data = { error: text.slice(0, 300) };
+            }
+
+            if (!response.ok) {
+              let errorMsg = `Failed to fetch from Like.vn API v2: ${response.status}`;
+              if (response.status === 403) {
+                errorMsg += ' (Cloudflare Blocked. Vui lòng cấu hình Proxy trong phần Cấu hình để khắc phục)';
+              }
+              res.writeHead(response.status, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: errorMsg, details: data }));
+              return;
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(data));
+          } catch (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: `Lỗi máy chủ proxy: ${err.message}` }));
+          }
+        });
+      } else {
+        next();
+      }
+    });
+
     // --- Endpoint: Place order via cookie ---
     server.middlewares.use('/api/custom-order', (req, res, next) => {
       if (req.method === 'POST') {

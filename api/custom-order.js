@@ -123,6 +123,13 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, 
     agent
   });
 
+  if (response.status === 403) {
+    return {
+      status: 403,
+      data: { error: 'Không thể kết nối (403 Cloudflare Blocked). Vui lòng cấu hình Proxy trong phần Cấu hình để vượt qua tường lửa!' }
+    };
+  }
+
   const text = await response.text();
   try { return { status: response.status, data: JSON.parse(text) }; }
   catch(e) { return { status: response.status, data: { error: text.slice(0, 300) } }; }

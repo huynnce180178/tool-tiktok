@@ -154,7 +154,7 @@ export default function App() {
       const response = await fetch('/api/v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: apiKey, action: 'balance' })
+        body: JSON.stringify({ key: apiKey, action: 'balance', proxy: proxyUrl })
       });
       const data = await response.json();
       if (data && data.balance !== undefined) {
@@ -180,7 +180,7 @@ export default function App() {
       const response = await fetch('/api/v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: apiKey, action: 'services' })
+        body: JSON.stringify({ key: apiKey, action: 'services', proxy: proxyUrl })
       });
       const data = await response.json();
       if (Array.isArray(data)) {
@@ -254,7 +254,8 @@ export default function App() {
           action: 'add',
           service: serviceId,
           link: link,
-          quantity: qty
+          quantity: qty,
+          proxy: proxyUrl
         })
       });
       const data = await response.json();
@@ -327,7 +328,7 @@ export default function App() {
       const response = await fetch('/api/v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: apiKey, action: 'status', order: targetId })
+        body: JSON.stringify({ key: apiKey, action: 'status', order: targetId, proxy: proxyUrl })
       });
 
       const data = await response.json();
