@@ -211,6 +211,13 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken, 
     agent
   });
 
+  if (response.status === 403) {
+    return {
+      status: 403,
+      data: { error: 'Không thể kết nối (403 Cloudflare Blocked). Vui lòng cấu hình Proxy trong phần Cấu hình để vượt qua tường lửa!' }
+    };
+  }
+
   const text = await response.text();
   try { return { status: response.status, data: JSON.parse(text) }; }
   catch(e) { return { status: response.status, data: { error: text.slice(0, 300) } }; }
@@ -354,8 +361,12 @@ const historyProxyPlugin = () => ({
             }
 
             if (!response.ok) {
-              throw new Error(`Failed to fetch orders from Like.vn: ${response.status}`);
-            }
+              let errorMsg = `Failed to fetch orders from Like.vn: ${response.status}`;
+              if (response.status === 403) {
+                errorMsg += ' (Cloudflare Blocked. Vui lòng cấu hình Proxy trong phần Cấu hình để vượt qua tường lửa)';
+              }
+              throw new Error(errorMsg);
+             }
 
             // Sort logic: Keep "Đang chạy", "Đang xử lý", "Chờ duyệt" on top
             orders.sort((a, b) => {
