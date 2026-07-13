@@ -45,7 +45,11 @@ export default function App() {
 
   // Config States
   const [apiKey, setApiKey] = useState(() => {
-    return localStorage.getItem('like_vn_token') || 'e8f605443ed9f494fedc98ab7b8b75d3';
+    const saved = localStorage.getItem('like_vn_token');
+    if (!saved || saved === 'e8f605443ed9f494fedc98ab7b8b75d3') {
+      return 'db6cfc2375c30fc48cab714cf33bfd08';
+    }
+    return saved;
   });
   const [cookieString, setCookieString] = useState(() => {
     return localStorage.getItem('like_vn_cookie') || DEFAULT_COOKIE;
