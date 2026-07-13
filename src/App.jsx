@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { addOrder, getBalance, getOrderStatus, getServices } from './likeVnApi';
 
 // ==========================================
 // CẤU HÌNH THỜI GIAN BOT AUTO QUÉT TẠI ĐÂY
@@ -174,18 +175,13 @@ export default function App() {
     setLogs(prev => [...prev, { time, text }]);
   };
 
-  // Fetch Balance from API
+  // Gọi thẳng Like.vn API từ trình duyệt (giống PHP trên máy cá nhân) — không qua Vercel
   const fetchBalance = async () => {
     if (!apiKey) return;
     setBalanceLoading(true);
     setApiConnectionOk(null);
     try {
-      const response = await fetch('/api/v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: apiKey, action: 'balance', proxy: proxyUrl })
-      });
-      const data = await response.json();
+      const data = await getBalance(apiKey);
       if (data && data.balance !== undefined) {
         setBalance(data.balance);
         setApiConnectionOk(true);
@@ -206,18 +202,13 @@ export default function App() {
 
   const testConnection = async () => {
     try {
-      const response = await fetch('/api/v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: apiKey, action: 'services', proxy: proxyUrl })
-      });
-      const data = await response.json();
+      const data = await getServices(apiKey);
       if (Array.isArray(data)) {
         setApiConnectionOk(true);
       } else {
         setApiConnectionOk(false);
       }
-    } catch (e) {
+    } catch {
       setApiConnectionOk(false);
     }
   };
@@ -243,7 +234,7 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      if (!silent) showAlert('danger', `Lỗi tải lịch sử: ${err.message}`);
+      if (!silent) showAlert('danger', `Lỗi tải lịch sử: ${err.message}. Cần cấu hình Proxy trong mục Cấu hình.`);
     } finally {
       if (!silent) setHistoryLoading(false);
     }
@@ -275,20 +266,7 @@ export default function App() {
   // Helper to place order via API (for manual orders with non-free services)
   const _placeOrderApi = async (serviceId, link, qty) => {
     try {
-      const response = await fetch('/api/v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: apiKey,
-          action: 'add',
-          service: serviceId,
-          link: link,
-          quantity: qty,
-          proxy: proxyUrl
-        })
-      });
-      const data = await response.json();
-      return data;
+      return await addOrder(apiKey, { service: serviceId, link, quantity: qty });
     } catch (err) {
       return { error: err.message };
     }
@@ -354,13 +332,7 @@ export default function App() {
     setCheckingStatus(true);
     setStatusResult(null);
     try {
-      const response = await fetch('/api/v2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: apiKey, action: 'status', order: targetId, proxy: proxyUrl })
-      });
-
-      const data = await response.json();
+      const data = await getOrderStatus(apiKey, targetId);
 
       if (data && !data.error) {
         setStatusResult({ orderId: targetId, ...data });
@@ -699,10 +671,11 @@ export default function App() {
       </header>
 
       {serverConfig.loaded && serverConfig.needsProxy && !hasActiveProxy && (
-        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,77,79,0.15)', border: '1px solid #ff4d4f', borderRadius: '8px', fontSize: '0.85rem' }}>
-          <strong style={{ color: '#ff4d4f' }}>Lỗi 403 Cloudflare:</strong> Vercel bị Like.vn chặn.
+        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,183,3,0.12)', border: '1px solid #ffb703', borderRadius: '8px', fontSize: '0.85rem' }}>
+          <strong style={{ color: '#ffb703' }}>Lưu ý:</strong> Số dư &amp; kiểm tra đơn gọi thẳng Like.vn từ trình duyệt (không cần proxy).
+          Chỉ <strong>Tạo đơn Free</strong> và <strong>Lịch sử</strong> cần proxy vì dùng Cookie.
           Bấm <button type="button" className="btn btn-outline" style={{ padding: '0.15rem 0.5rem', margin: '0 0.25rem' }} onClick={() => setShowSettings(true)}>Cấu hình</button>
-          và làm theo hướng dẫn thêm proxy (hoặc set <code>LIKE_VN_PROXY</code> trên Vercel).
+          để thêm proxy hoặc set <code>LIKE_VN_PROXY</code> trên Vercel.
         </div>
       )}
 
@@ -767,20 +740,22 @@ export default function App() {
                 </div>
               ) : serverConfig.isVercel ? (
                 <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', background: 'rgba(255,183,3,0.1)', border: '1px solid #ffb703', borderRadius: '8px', fontSize: '0.8rem', lineHeight: 1.6 }}>
-                  <strong style={{ color: '#ffb703' }}>⚠️ Vercel bị Cloudflare chặn — làm theo 1 trong 2 cách:</strong>
+                  <strong style={{ color: '#ffb703' }}>ℹ️ Proxy chỉ cần cho Tạo đơn Free &amp; Lịch sử (dùng Cookie)</strong>
+                  <div style={{ marginTop: '0.35rem' }}>
+                    Số dư / kiểm tra trạng thái gọi thẳng Like.vn API từ trình duyệt — giống code PHP bạn chạy trên máy, không cần proxy.
+                  </div>
                   <div style={{ marginTop: '0.5rem' }}>
                     <strong>Cách 1 (khuyên dùng): Cấu hình trên Vercel Dashboard</strong>
                     <ol style={{ margin: '0.35rem 0 0 1.25rem', padding: 0 }}>
                       <li>Mua proxy HTTP/SOCKS5 Việt Nam</li>
-                      <li>Vào <a href="https://vercel.com/dashboard" target="_blank" rel="noreferrer" style={{ color: '#00f2fe' }}>vercel.com/dashboard</a> → chọn project <strong>tool-tiktok</strong></li>
-                      <li>Tab <strong>Settings</strong> → <strong>Environment Variables</strong></li>
-                      <li>Thêm biến: Name = <code>LIKE_VN_PROXY</code>, Value = <code>http://user:pass@ip:port</code></li>
-                      <li>Chọn môi trường <strong>Production</strong> → Save</li>
-                      <li>Tab <strong>Deployments</strong> → bấm <strong>Redeploy</strong> (không dùng cache)</li>
+                      <li>Vào <a href="https://vercel.com/dashboard" target="_blank" rel="noreferrer" style={{ color: '#00f2fe' }}>vercel.com/dashboard</a> → project <strong>tool-tiktok</strong></li>
+                      <li><strong>Settings</strong> → <strong>Environment Variables</strong></li>
+                      <li>Name = <code>LIKE_VN_PROXY</code>, Value = <code>http://user:pass@ip:port</code></li>
+                      <li>Chọn <strong>Production</strong> → Save → <strong>Redeploy</strong></li>
                     </ol>
                   </div>
                   <div style={{ marginTop: '0.5rem' }}>
-                    <strong>Cách 2: Nhập proxy vào ô phía trên</strong> (lưu trên trình duyệt, mỗi máy phải nhập lại)
+                    <strong>Cách 2:</strong> Nhập proxy vào ô phía trên (lưu trên trình duyệt)
                   </div>
                 </div>
               ) : (
