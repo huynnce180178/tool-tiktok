@@ -9,7 +9,8 @@ export default function Settings() {
     fetchScrapedHistory,
     historyLoading,
     handleSaveCookie,
-    handleClearCookie
+    handleClearCookie,
+    clearServerLogs
   } = useOutletContext();
 
   return (
@@ -87,6 +88,15 @@ export default function Settings() {
               Xóa Cookie
             </button>
           )}
+
+          <button
+            type="button"
+            className="btn btn-outline border-red text-red"
+            style={{ padding: '0.6rem 1.5rem', width: 'auto' }}
+            onClick={clearServerLogs}
+          >
+            Xóa Sạch Log
+          </button>
         </div>
 
         <div className="info-box-cyan">

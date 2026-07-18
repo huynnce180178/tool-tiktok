@@ -6,7 +6,7 @@ import History from './pages/History';
 import Settings from './pages/Settings';
 
 // Default session cookies for scraping
-const DEFAULT_COOKIE = `remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d=eyJpdiI6InZFdG1nRUhkMG5KZkRML1g3SnpSNXc9PSIsInZhbHVlIjoiUW5kRDBWTC9id2Fkd3Q0b2NyamRYTmlKMlZQSGQ4UmF5Y09NUWY3YnFJTjFZb05Db1VaeittbTc4eUw0WFU5Zmp0TDQ1NFBkcFpBejNodWtFdjE2b1QwMHBCeDZxQVpNaCs4ZFNSVWxvNjRoZGVmcGZPTVB6a2I2aGs3ZlZNVVFva0JPOW9Kdjh5endVcmlreHJtTEQ5Sk5FcDMzTkpVclZ1cS9ZRGlPWk83eVU0YkVHOCt6SUZXRjdkNVZKbEZiMklHRkZodjg1L00rejlVd29hL1JFZUlEQ0RMaXhyVUFOT1V1MklDaFN2bz0iLCJtYWMiOiI2NDk3NTI1N2VmYTI2M2Y1ZmRlYjliOGIzMzBiMDllNTgwZjhiOTI1NGRhOWVmZmUwMzg0ZGVjNDIzZGZjODVmIiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6Im9hOXF4d1M5Z29HY2YvakZnelhxdWc9PSIsInZhbHVlIjoiVDhJUkNkT0dxbkJiWTJWV0ZOamtsdFovQllKdHp4bmh3bGdyN0tRdzVseTRhWjJWbFg2Ti96UUM1RnA0VTdXcXZwSForRnQwTUVKdlI5a2JnMEhGQ1p2dStldVNVWFdVK1kxNXB2aktMMkczbnpIbHJKSy9Rc2Jza09xaVNKMEkiLCJtYWMiOiJlYWYzNTk3MGFjODk3NjliOGFhMGZmMDM3NjI5NDFjOWFmNGM5YjhlYTk2YzI4NmQ0ZjEwMGI0ZDg5ZjAyNDY2IiwidGFnIjoiIn0%3D; likevn_session=eyJpdiI6IjJXbWxHMUFKeTRTQURkWDdDdDg1akE9PSIsInZhbHVlIjoiUkNPajdHMXNqRmw4c29pRlI0TUpWWWpXaUdvbjFmTnFycytJM0FmUzFjN1ZZTk5wRmdxUFk1NHQvL0s0bkF4VjVoY1B4M2hSaVNJcjBEMlEreE1lcytxanEyQis0UHE2YUVvQ0xyaFg1UGlTZlZBZ2o2Z25hK21oQ0g5Wk5MME4iLCJtYWMiOiJjOGViZWJlMzJhMDgwM2YzNTQ5MDI0OGFlMzllYmFkZWUwYWMwYTBjNTI3ZDljYTFiMGM0NDZiM2FmOWJkODBkIiwidGFnIjoiIn0%3D; cf_clearance=kxE4BTVqhAyMKbtS3PJVPOJpTknYlLJrwifSdpGSEyQ-1783871828-1.2.1.1-13h02wVll4NIkkh820eO0Ajufj1T0p3XAf2DmzeJjcR6wEKq.D71rXUIO4Ahzwy3464Ktbn82L1YwXvvVjZdTBJWj6KMD1v1WyOFjKIb6VlSuXt49hq5.3_Q5IvkE.vHXIhLcwMn1Xgmx0IlvLL49OcJPcKSUeOKLB8T7c_LP75.FRTD.4spAp4PgiPldH6Y8n20p1IwSle7f8oSJQ4QtQ9Sh_c6OSDm3B7HvbFMQzZriFNnPUlCtY.Yq8wQEXr4R5vAJi7u.Wun.ddjEvHcGKxFBYIwwUya0XqrMM1i6mikC5PgYamzXirVGqQayJSRxkwPENCyaT96CGLTJipstg`;
+const DEFAULT_COOKIE = `XSRF-TOKEN=eyJpdiI6ImhYaGRhVmRMWmR6bEdPaE8rcTlzREE9PSIsInZhbHVlIjoiakk2L2RzMFRkMlRnNFJoZVJ2bHlIVUFwYmxjSFVKNmswRkZKcTh0aFFWMmN3ZzJneXI1cGtoTDFkbERxQUxRRC85WHM3czZrOEYrMmE5czRFU1lrUFBJcjJvQkp3T1FuNTVsMnd6NnlHZnpZVUFZUzlvTkFNNEVhY3hJWFQ3Q2giLCJtYWMiOiJmMmRiMmY5MWYyMjAxYjJhNGU4NDk4OGY5OGNiMDNmNDFkMTdhMGZkMDllY2VmN2IxMmEwMjZiMjhiYTgxYTQyIiwidGFnIjoiIn0%3D; likevn_session=eyJpdiI6InVGUlFaVThqbm1GZGhYS2N5VDZYL1E9PSIsInZhbHVlIjoiUzJRZTZXQStJaXRLL0RjU1Nxc2hqRXBseUlMZmtOQ2pPRG44bGkxTjhhcC9mK2o5WEhYcHBDd25hMkdEbzVSa1V5Uis1djRuMHQwVGF4N0NrSEJVdnVXK3JTSlFkbU9QRG1oS2lCWUhTeDZNR2J3N2pDWi9oTlpTVld6ditsYnYiLCJtYWMiOiIzZWI1ZDRkYzZkOWUwMzVhNjQwMmIwZTQ5ZTMxNThhYWQ4ZGFhZGVmYmMyMGRkM2M2NDU1NWUwNTAwNTJkMjJiIiwidGFnIjoiIn0%3D; cf_clearance=bhYA6DoZBUvPZWTX3NA266BF48agxtddQZrroAunqyc-1784115271-1.2.1.1-Z3qmFdJGCaqMxTtYnaEo.plaGsnQ..xK82naZk_j22i5bQn7TA5AO9f63ZAxJeH1UYHT_OyqRBPlAINMFdIkbaTXppHKO7d0I8zuYk9VpL7XM3frwIO11PQ9ivIx.WwT1bFrcfL6sgGLUH4t1YhzHUOr7XjPLaYOoD1pWPx3JJ4jK1PiXts.o35Viox1El9Y8J7Y1pVqDa8_lPHEzwRjJdnvrPmqeVY9zixMcQtmt7bkl8xghkUTW4e.C1kGSHOddpQkFDPL2zRr3MEFdOD4z6aD_CHMG81pcvpc3T7byaI3ErSDX_WEm7.8zj8VbuIVb4hGWp3CYNQub0wnegrJwQ`;
 
 // Free services configuration on Like.vn
 const INITIAL_SERVICES = {
@@ -79,7 +79,16 @@ function AppContent() {
 
   // Auto Mode States
   const [isAutoRunning, setIsAutoRunning] = useState(false);
-  const [autoTiktokLink, setAutoTiktokLink] = useState('');
+  const [autoLinks, setAutoLinks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('auto_links_queue');
+      return saved ? JSON.parse(saved) : [
+        { id: 'initial', url: '', targetOrders: 4, currentOrders: 0, mode: 'all', status: 'pending' }
+      ];
+    } catch {
+      return [{ id: 'initial', url: '', targetOrders: 4, currentOrders: 0, mode: 'all', status: 'pending' }];
+    }
+  });
   const [autoTimeWindow, setAutoTimeWindow] = useState('6h');
   const [countdown, setCountdown] = useState(0);
   const [logs, setLogs] = useState([]);
@@ -90,6 +99,11 @@ function AppContent() {
   const [runningTimeStr, setRunningTimeStr] = useState('00:00:00');
   const [autoCheckInterval, setAutoCheckInterval] = useState(420);
 
+  // Sync autoLinks to localStorage
+  useEffect(() => {
+    localStorage.setItem('auto_links_queue', JSON.stringify(autoLinks));
+  }, [autoLinks]);
+
   // Scraped Account History States
   const [scrapedOrders, setScrapedOrders] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -97,11 +111,20 @@ function AppContent() {
   const [historyScope, setHistoryScope] = useState('today');
   const [historySearch, setHistorySearch] = useState('');
 
+  const [likeVnUsername, setLikeVnUsername] = useState(() => {
+    return localStorage.getItem('like_vn_username') || '';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('like_vn_username', likeVnUsername);
+  }, [likeVnUsername]);
+
   const [connectionStatus, setConnectionStatus] = useState('none');
 
   const checkConnection = async (cookieVal) => {
     if (!cookieVal) {
       setConnectionStatus('none');
+      setLikeVnUsername('');
       return;
     }
     setConnectionStatus('checking');
@@ -113,11 +136,17 @@ function AppContent() {
       });
       if (response.ok) {
         setConnectionStatus('success');
+        const data = await response.json();
+        if (data && data.username) {
+          setLikeVnUsername(data.username);
+        }
       } else {
         setConnectionStatus('failed');
+        setLikeVnUsername('');
       }
     } catch (e) {
       setConnectionStatus('failed');
+      setLikeVnUsername('');
     }
   };
 
@@ -156,6 +185,8 @@ function AppContent() {
   const handleClearCookie = async () => {
     setCookieString('');
     localStorage.setItem('like_vn_cookie', '');
+    setLikeVnUsername('');
+    localStorage.setItem('like_vn_username', '');
     await syncCookieToServer('');
     window.location.reload();
   };
@@ -209,19 +240,34 @@ function AppContent() {
       });
 
       const data = await response.json();
-      if (response.ok && Array.isArray(data)) {
-        setScrapedOrders(data);
+      if (response.ok) {
+        let ordersList = [];
+        let fetchedUsername = '';
+        if (Array.isArray(data)) {
+          ordersList = data;
+        } else if (data && typeof data === 'object') {
+          ordersList = Array.isArray(data.orders) ? data.orders : [];
+          fetchedUsername = data.username || '';
+        }
+        
+        setScrapedOrders(ordersList);
+        if (fetchedUsername) {
+          setLikeVnUsername(fetchedUsername);
+        }
         setConnectionStatus('success');
-        return data;
+        return ordersList;
       } else if (data && data.error) {
         setConnectionStatus('failed');
         if (!silent) showPopup(data.error, 'error');
         setScrapedOrders([]);
+        setLikeVnUsername('');
       } else {
         setConnectionStatus('failed');
+        setLikeVnUsername('');
       }
     } catch (err) {
       setConnectionStatus('failed');
+      setLikeVnUsername('');
       console.error(err);
       if (!silent) showPopup(`Lỗi tải lịch sử: ${err.message}`, 'error');
     } finally {
@@ -348,12 +394,9 @@ function AppContent() {
   const [creationCountdown, setCreationCountdown] = useState(0);
 
   const startAutoBot = async () => {
-    if (!autoTiktokLink) {
-      showPopup('Vui lòng nhập link video TikTok cần chạy Auto!', 'error');
-      return;
-    }
-    if (!autoTiktokLink.includes('tiktok.com')) {
-      showPopup('Link TikTok không hợp lệ!', 'error');
+    const invalidLink = autoLinks.find(l => !l.url || !l.url.includes('tiktok.com'));
+    if (invalidLink) {
+      showPopup('Hàng đợi chứa link không hợp lệ! Vui lòng nhập link video TikTok chính xác.', 'error');
       return;
     }
 
@@ -362,7 +405,7 @@ function AppContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          autoTiktokLink,
+          autoLinks,
           cookieString,
           autoTimeWindow,
           apiKey,
@@ -401,12 +444,9 @@ function AppContent() {
   };
 
   const handleSaveLinkToFile = async () => {
-    if (!autoTiktokLink) {
-      showPopup('Vui lòng nhập link video TikTok cần lưu!', 'error');
-      return;
-    }
-    if (!autoTiktokLink.includes('tiktok.com')) {
-      showPopup('Link TikTok không hợp lệ!', 'error');
+    const invalidLink = autoLinks.find(l => !l.url || !l.url.includes('tiktok.com'));
+    if (invalidLink) {
+      showPopup('Hàng đợi chứa link không hợp lệ! Vui lòng nhập link video TikTok chính xác.', 'error');
       return;
     }
 
@@ -414,7 +454,7 @@ function AppContent() {
       const response = await fetch('/api/bot/save-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ link: autoTiktokLink }),
+        body: JSON.stringify({ links: autoLinks }),
       });
 
       if (!response.ok) {
@@ -423,7 +463,11 @@ function AppContent() {
         return;
       }
 
-      showPopup('Đã lưu link video TikTok vào file thành công!', 'success');
+      const data = await response.json();
+      if (data.links) {
+        setAutoLinks(data.links);
+      }
+      showPopup('Đã lưu danh sách link TikTok vào file thành công!', 'success');
     } catch (err) {
       showPopup(`Lỗi kết nối máy chủ: ${err.message}`, 'error');
     }
@@ -443,6 +487,7 @@ function AppContent() {
 
   // Sync bot status from backend
   useEffect(() => {
+    let isFirstFetch = true;
     const fetchStatus = async () => {
       try {
         const response = await fetch('/api/bot/status');
@@ -457,16 +502,17 @@ function AppContent() {
           setLikeOrderCount(data.likeOrderCount);
           setViewOrderCount(data.viewOrderCount);
 
-          if (data.isAutoRunning) {
-            if (data.autoTiktokLink) setAutoTiktokLink(data.autoTiktokLink);
+          if (data.isAutoRunning || isFirstFetch) {
+            if (data.links && data.links.length > 0) setAutoLinks(data.links);
             if (data.autoTimeWindow) setAutoTimeWindow(data.autoTimeWindow);
-            if (data.cookieString && window.location.hash !== '#/settings') {
+            if (data.cookieString && (isFirstFetch || window.location.pathname !== '/settings')) {
               setCookieString(data.cookieString);
             }
             if (data.apiKey) setApiKey(data.apiKey);
+            if (data.autoCheckInterval) setAutoCheckInterval(data.autoCheckInterval);
+            isFirstFetch = false;
           }
           setBotStartTime(data.startTime);
-          if (data.autoCheckInterval) setAutoCheckInterval(data.autoCheckInterval);
         }
       } catch (err) {
         console.error('Error fetching bot status:', err);
@@ -577,10 +623,11 @@ function AppContent() {
           connectionStatus={connectionStatus}
           likeOrderCount={likeOrderCount}
           viewOrderCount={viewOrderCount}
+          likeVnUsername={likeVnUsername}
           context={{
             isAutoRunning,
-            autoTiktokLink,
-            setAutoTiktokLink,
+            autoLinks,
+            setAutoLinks,
             autoTimeWindow,
             setAutoTimeWindow,
             countdown,
@@ -632,7 +679,8 @@ function AppContent() {
             setHistorySearch,
             runningTimeStr,
             autoCheckInterval,
-            setAutoCheckInterval
+            setAutoCheckInterval,
+            likeVnUsername
           }}
         />}>
           <Route path="/" element={<Home />} />

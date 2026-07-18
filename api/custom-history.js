@@ -6,6 +6,30 @@ import {
   resolveProxyUrl,
 } from './lib/proxy.js';
 
+// HTML parsing function to extract logged in username
+function parseUsername(html) {
+  // Approach 1: general div with style="font-size: 17px"
+  const generalMatch = html.match(/<div[^>]*style="font-size:\s*17px[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+  if (generalMatch) {
+    const name = generalMatch[1].replace(/<[^>]*>/g, '').trim();
+    if (name && name !== 'Bạn chưa đăng nhập') {
+      return name;
+    }
+  }
+
+  // Approach 2: dropdown user menu p tag
+  const userHeaderMatch = html.match(/<li[^>]*class="user-header"[\s\S]*?<p>([\s\S]*?)<\/p>/i);
+  if (userHeaderMatch) {
+    const text = userHeaderMatch[1].replace(/<[^>]*>/g, '').trim();
+    const firstLine = text.split('\n')[0].trim();
+    if (firstLine && firstLine !== 'Bạn chưa đăng nhập') {
+      return firstLine;
+    }
+  }
+  
+  return '';
+}
+
 function parseOrdersHtml(html) {
   const tableMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
   if (!tableMatch) return [];
@@ -143,7 +167,8 @@ export default async function handler(req, res) {
       return 0;
     });
 
-    return res.status(200).json(orders);
+    const username = parseUsername(html);
+    return res.status(200).json({ username, orders });
   } catch (err) {
     return res.status(500).json({ error: `Lỗi máy chủ proxy: ${err.message}` });
   }

@@ -18,6 +18,23 @@ export default function History() {
     getFilteredOrders
   } = useOutletContext();
 
+  // Auto-refresh the order history list every 10 seconds silently
+  const fetchRef = React.useRef(fetchScrapedHistory);
+  React.useEffect(() => {
+    fetchRef.current = fetchScrapedHistory;
+  });
+
+  React.useEffect(() => {
+    // Initial fetch on mount to make sure it's fresh (shows loading spinner)
+    fetchRef.current();
+
+    const interval = setInterval(() => {
+      fetchRef.current(true);
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   const filtered = getFilteredOrders();
 
   return (

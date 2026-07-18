@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
-export default function Layout({ isAutoRunning, connectionStatus, likeOrderCount, viewOrderCount, context }) {
+export default function Layout({ isAutoRunning, connectionStatus, likeOrderCount, viewOrderCount, likeVnUsername, context }) {
   return (
     <div className="app-container">
       {/* Background Glows */}
@@ -54,6 +54,12 @@ export default function Layout({ isAutoRunning, connectionStatus, likeOrderCount
             {connectionStatus === 'checking' && '🟡 Đang kiểm tra...'}
             {connectionStatus === 'none' && '⚪ Chưa cấu hình'}
           </div>
+
+          {connectionStatus === 'success' && likeVnUsername && (
+            <div className="status-badge-mini success" style={{ color: 'var(--text-primary)' }}>
+              👤 {likeVnUsername}
+            </div>
+          )}
         </div>
       </header>
 

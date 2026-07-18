@@ -1,17 +1,95 @@
 {
   "isAutoRunning": true,
-  "autoTiktokLink": "https://www.tiktok.com/@learnlab.vn/video/7661165953190825230",
-  "cookieString": "remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d=eyJpdiI6InZFdG1nRUhkMG5KZkRML1g3SnpSNXc9PSIsInZhbHVlIjoiUW5kRDBWTC9id2Fkd3Q0b2NyamRYTmlKMlZQSGQ4UmF5Y09NUWY3YnFJTjFZb05Db1VaeittbTc4eUw0WFU5Zmp0TDQ1NFBkcFpBejNodWtFdjE2b1QwMHBCeDZxQVpNaCs4ZFNSVWxvNjRoZGVmcGZPTVB6a2I2aGs3ZlZNVVFva0JPOW9Kdjh5endVcmlreHJtTEQ5Sk5FcDMzTkpVclZ1cS9ZRGlPWk83eVU0YkVHOCt6SUZXRjdkNVZKbEZiMklHRkZodjg1L00rejlVd29hL1JFZUlEQ0RMaXhyVUFOT1V1MklDaFN2bz0iLCJtYWMiOiI2NDk3NTI1N2VmYTI2M2Y1ZmRlYjliOGIzMzBiMDllNTgwZjhiOTI1NGRhOWVmZmUwMzg0ZGVjNDIzZGZjODVmIiwidGFnIjoiIn0%3D; XSRF-TOKEN=eyJpdiI6Ing5Z1owNEdRVEY3R2sxZ0F1UlBUSFE9PSIsInZhbHVlIjoiTy9HQU54SjlLZ0JNbFg2Q0w0VC9FVGY1SkFLR2JUbU14enk2TnZnejFrSXJhYjdYSHE3SkJMWnBqZUZVMGlRWXNKNFA1V0N1ZDdrS0dQUUpqdGZ2YVV3VSszVUV6SkNPN1RzY2VxYmFLTkVCVmlJUllwck5PQ3hVcStDSUc1RFkiLCJtYWMiOiI5ZDMxZDMxN2ViMzhlNjdjYzAxNWY4MjMxNTYzZDgzNzUxZmY0NTEwMTg5YTM1ZDI1ZmM4NjQ4ZjMzOGQ4MzY0IiwidGFnIjoiIn0%3D; likevn_session=eyJpdiI6IkRUM1I3aG5xeFlOaXBsWEVUZTNKNWc9PSIsInZhbHVlIjoiMlBJQ21ZT3MvWFNqdERwNGpYNGpvZUs2YWJXR3pnZGZvaVkwMEdaV0FhWlI5VDBja3I2dnhocHZBaFJOdENIRnRySWErYVFNZ1RyNTk1NVFlcy9vT05NZ090VkZNM1JMRVlEYzcvcWVBaVZlN1RKNG9wRFBibk5vNy8vYytGenIiLCJtYWMiOiJjMzk3YzZlMzM4ZGUzNWU2MWQ1OTFiMWU5ZTkyNTE0MjUyZDMzYTAwMGNkYThlMGNkOWVmZDNjM2FjYzIzM2FlIiwidGFnIjoiIn0%3D; cf_clearance=lhIcIJmRIolMSyCryyxhgXs075gT5.psl1xAAakfXII-1783943418-1.2.1.1-3aWxpcTk6BUU8RKhYNUxyNoCoDwskDupmuc1yYScaFprEShXU8d5grqQwG9POSOboAEcanBn.pGtXcAZKiQS_N1d.Num79Y8.2bWjipQLNuYx8x.41jRxmrvQcc3LmTLgdzUIY5co.tEZkjrbSHWCE3qCzOd09aeh6uNCgBPdY_ox8QMyVvx1722g_bqIvxAQe0uG7IoQQKP4qn__7iteGwbrwENQcK.ubXJfZVZntnpNp3fJpNILmpJ9m8zIdXykZKkQCc_QS_T50Op_x62ZBuJXTYOlEzGf0XyuT92L0RVI_iE606VJspm8uzMkd8cr7auMAZyeKl6aNyP7D3jvQ",
+  "links": [
+    {
+      "id": "migrated",
+      "url": "https://www.tiktok.com/@learnlab.vn/video/7663686713994251533",
+      "targetOrders": 4,
+      "currentOrders": 0,
+      "mode": "all_like_first",
+      "status": "running"
+    },
+    {
+      "id": "link_1784342868240_oleg18udq",
+      "url": "https://www.tiktok.com/@learnlab.vn/video/7661635822814317838",
+      "targetOrders": 4,
+      "currentOrders": 0,
+      "mode": "all",
+      "status": "pending"
+    },
+    {
+      "id": "link_1784342899537_mpflvaewe",
+      "url": "https://www.tiktok.com/@learnlab.vn/video/7661634325766491405",
+      "targetOrders": 4,
+      "currentOrders": 0,
+      "mode": "all_like_first",
+      "status": "pending"
+    },
+    {
+      "id": "link_1784342904412_cn5dr8ou2",
+      "url": "https://www.tiktok.com/@learnlab.vn/video/7661164820128910605",
+      "targetOrders": 4,
+      "currentOrders": 0,
+      "mode": "all",
+      "status": "pending"
+    }
+  ],
+  "currentLinkIndex": 0,
+  "cookieString": "XSRF-TOKEN=eyJpdiI6IkRxaW1yUUVOOUVBc0J5TzVmejNDT2c9PSIsInZhbHVlIjoiaHdXNCsyWGdWYU9FV095WWNnVHhpOTlsZGYxWVlZcDk5cERmUlYyZmhUOU5HV3JkQ0l4M2JuUGQwVUs2OEtPbXp1a0lkemtnRDZsbDd2ZEo4WW1ERmsvM3haOFdlVkJkM0tCQzZwT3NKTmpPVDJaSzdvbTNORmwyT09jTmRzK1UiLCJtYWMiOiJkMzg1ZDgxZjk2MTZkNzk3NWMzMjNjN2MwNDQ5YzVlYTgxMDQ2NTk3MTM4MzU4N2FlMjkxMDE1MzM0OTAzMDM4IiwidGFnIjoiIn0%3D; likevn_session=eyJpdiI6InJMdUhBZEF0V2FFOTZGMSt2SWRGd0E9PSIsInZhbHVlIjoiRTNsWHZjN1JUYjVDY3FDeHZKcG5WWTAzdFlidzJiSkV0R3dPUlM4SmZyS2JVZEx4ZXV3Z25zajBZemh6MDkzdW9EUGJWdXJTYThPRmswekJEMzZnYWF1UFRJMjY0MSt0TkwwZzJlZFdvdmFtTTUxeTk0V3YySXNtQ0dYV2pQMWMiLCJtYWMiOiI1ZTdjNDM2N2VkNDc3NDYwNDUyMjBkM2M5M2Y4NTQzOTk1YjhjMTc5ZWI0N2UwMmM1ZGNjMzczY2I2MTkzMzlmIiwidGFnIjoiIn0%3D; cf_clearance=57AZmtWf7Xook7nq_MxIpRPJf1z50JPSUAXbJE99bYM-1784342280-1.2.1.1-BKJlaZOLYK5UbHg4lEgTm0QvmY8uMCCDq4kCoHvd1bwQB4u26ZK5p1HsqOdcKG1G3sgtrlrFkTErrfC6k1KayDSOsrCLtNNYzYNx9b7z1GditYKZVhBv.zkKcHGBPGHh3EoZ31QNmmrOKlIvxeUqEhJE4GDelFSMxgsal0Xf_XTNCPAsuY2Nm7AleXuIWhT.s7D54DjwelKhSws092N0wpoaAOX7Hs8hm_2n76h3z7Bena9KAl2_f_UIj75CijnTu.BWYDakzs1q2LElfFXCCtWuIOny_lznFtxppkj3tapqxBue.PTSXYifXiTNSj.XIkuVTun7dfUkAZEmb14gtQ",
   "autoTimeWindow": "all",
-  "apiKey": "db6cfc2375c30fc48cab714cf33bfd08",
-  "autoPhase": "checking",
-  "countdown": 100,
-  "creationCountdown": 0,
-  "logs": [],
+  "apiKey": "a0771231284e30f990f9d91c37e0cec8",
+  "autoPhase": "creating",
+  "countdown": 419,
+  "creationCountdown": 115,
+  "logs": [
+    {
+      "time": "10:03:58",
+      "text": "Khởi chạy chế độ tự động cho 4 link video."
+    },
+    {
+      "time": "10:03:58",
+      "text": "Link đang chạy (#1): https://www.tiktok.com/@learnlab.vn/video/7663686713994251533 (Chế độ: 1 đơn Like + 1 đơn View, Chỉ tiêu: 4 đơn)"
+    },
+    {
+      "time": "10:03:58",
+      "text": "Cấu hình mốc kiểm tra: Toàn thời gian"
+    },
+    {
+      "time": "10:03:58",
+      "text": "Quét đợt đầu tiên ngay bây giờ..."
+    },
+    {
+      "time": "10:03:59",
+      "text": "Bắt đầu quét (Lần 1): https://www.tiktok.com/@learnlab.vn/video/7663686713994251533"
+    },
+    {
+      "time": "10:04:00",
+      "text": "Đang đồng bộ hóa lịch sử đơn hàng từ Like.vn..."
+    },
+    {
+      "time": "10:04:02",
+      "text": "Đồng bộ thành công! Quét đơn TikTok đang chạy..."
+    },
+    {
+      "time": "10:04:02",
+      "text": "  -> Đơn Like đang chạy: #md_SHM5WSDSHV_07_2026 | Tăng tim (Like) Tiktok SV4 | Đang chạy"
+    },
+    {
+      "time": "10:04:02",
+      "text": "Không có đủ đơn đang chạy cho link này (Cần thêm: View (SV5)). Bắt đầu tạo đơn..."
+    },
+    {
+      "time": "10:04:02",
+      "text": "Chuẩn bị tạo đơn: View (SV5). Đếm ngược 120s (like.vn yêu cầu đợi)..."
+    }
+  ],
   "scanCount": 1,
   "likeOrderCount": 0,
   "viewOrderCount": 0,
   "nextType": "like",
-  "startTime": 1783955903103,
+  "typesToCreate": [
+    "view"
+  ],
+  "startTime": 1784343838978,
   "autoCheckInterval": 420
 }
