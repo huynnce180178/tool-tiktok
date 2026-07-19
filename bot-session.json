@@ -2,94 +2,164 @@
   "isAutoRunning": true,
   "links": [
     {
-      "id": "migrated",
-      "url": "https://www.tiktok.com/@learnlab.vn/video/7663686713994251533",
-      "targetOrders": 4,
+      "id": "link_1784458687164_8aivsk4ot",
+      "url": "https://www.tiktok.com/@learnlab.vn/video/7663687260734377230",
+      "targetOrders": 8,
       "currentOrders": 0,
       "mode": "all_like_first",
       "status": "running"
-    },
-    {
-      "id": "link_1784342868240_oleg18udq",
-      "url": "https://www.tiktok.com/@learnlab.vn/video/7661635822814317838",
-      "targetOrders": 4,
-      "currentOrders": 0,
-      "mode": "all",
-      "status": "pending"
-    },
-    {
-      "id": "link_1784342899537_mpflvaewe",
-      "url": "https://www.tiktok.com/@learnlab.vn/video/7661634325766491405",
-      "targetOrders": 4,
-      "currentOrders": 0,
-      "mode": "all_like_first",
-      "status": "pending"
-    },
-    {
-      "id": "link_1784342904412_cn5dr8ou2",
-      "url": "https://www.tiktok.com/@learnlab.vn/video/7661164820128910605",
-      "targetOrders": 4,
-      "currentOrders": 0,
-      "mode": "all",
-      "status": "pending"
     }
   ],
   "currentLinkIndex": 0,
-  "cookieString": "XSRF-TOKEN=eyJpdiI6IkRxaW1yUUVOOUVBc0J5TzVmejNDT2c9PSIsInZhbHVlIjoiaHdXNCsyWGdWYU9FV095WWNnVHhpOTlsZGYxWVlZcDk5cERmUlYyZmhUOU5HV3JkQ0l4M2JuUGQwVUs2OEtPbXp1a0lkemtnRDZsbDd2ZEo4WW1ERmsvM3haOFdlVkJkM0tCQzZwT3NKTmpPVDJaSzdvbTNORmwyT09jTmRzK1UiLCJtYWMiOiJkMzg1ZDgxZjk2MTZkNzk3NWMzMjNjN2MwNDQ5YzVlYTgxMDQ2NTk3MTM4MzU4N2FlMjkxMDE1MzM0OTAzMDM4IiwidGFnIjoiIn0%3D; likevn_session=eyJpdiI6InJMdUhBZEF0V2FFOTZGMSt2SWRGd0E9PSIsInZhbHVlIjoiRTNsWHZjN1JUYjVDY3FDeHZKcG5WWTAzdFlidzJiSkV0R3dPUlM4SmZyS2JVZEx4ZXV3Z25zajBZemh6MDkzdW9EUGJWdXJTYThPRmswekJEMzZnYWF1UFRJMjY0MSt0TkwwZzJlZFdvdmFtTTUxeTk0V3YySXNtQ0dYV2pQMWMiLCJtYWMiOiI1ZTdjNDM2N2VkNDc3NDYwNDUyMjBkM2M5M2Y4NTQzOTk1YjhjMTc5ZWI0N2UwMmM1ZGNjMzczY2I2MTkzMzlmIiwidGFnIjoiIn0%3D; cf_clearance=57AZmtWf7Xook7nq_MxIpRPJf1z50JPSUAXbJE99bYM-1784342280-1.2.1.1-BKJlaZOLYK5UbHg4lEgTm0QvmY8uMCCDq4kCoHvd1bwQB4u26ZK5p1HsqOdcKG1G3sgtrlrFkTErrfC6k1KayDSOsrCLtNNYzYNx9b7z1GditYKZVhBv.zkKcHGBPGHh3EoZ31QNmmrOKlIvxeUqEhJE4GDelFSMxgsal0Xf_XTNCPAsuY2Nm7AleXuIWhT.s7D54DjwelKhSws092N0wpoaAOX7Hs8hm_2n76h3z7Bena9KAl2_f_UIj75CijnTu.BWYDakzs1q2LElfFXCCtWuIOny_lznFtxppkj3tapqxBue.PTSXYifXiTNSj.XIkuVTun7dfUkAZEmb14gtQ",
+  "cookieString": "",
   "autoTimeWindow": "all",
-  "apiKey": "a0771231284e30f990f9d91c37e0cec8",
-  "autoPhase": "creating",
-  "countdown": 419,
-  "creationCountdown": 115,
+  "apiKey": "",
+  "autoPhase": "checking",
+  "countdown": 280,
+  "creationCountdown": 120,
   "logs": [
     {
-      "time": "10:03:58",
-      "text": "Khởi chạy chế độ tự động cho 4 link video."
+      "time": "18:56:44",
+      "text": "Khởi chạy chế độ tự động cho 1 link video."
     },
     {
-      "time": "10:03:58",
-      "text": "Link đang chạy (#1): https://www.tiktok.com/@learnlab.vn/video/7663686713994251533 (Chế độ: 1 đơn Like + 1 đơn View, Chỉ tiêu: 4 đơn)"
+      "time": "18:56:44",
+      "text": "Link đang chạy (#1): https://www.tiktok.com/@learnlab.vn/video/7663687260734377230 (Chế độ: 1 đơn Like + 1 đơn View, Chỉ tiêu: 8 đơn)"
     },
     {
-      "time": "10:03:58",
+      "time": "18:56:44",
       "text": "Cấu hình mốc kiểm tra: Toàn thời gian"
     },
     {
-      "time": "10:03:58",
+      "time": "18:56:44",
       "text": "Quét đợt đầu tiên ngay bây giờ..."
     },
     {
-      "time": "10:03:59",
-      "text": "Bắt đầu quét (Lần 1): https://www.tiktok.com/@learnlab.vn/video/7663686713994251533"
+      "time": "18:56:45",
+      "text": "Bắt đầu quét (Lần 1): https://www.tiktok.com/@learnlab.vn/video/7663687260734377230"
     },
     {
-      "time": "10:04:00",
+      "time": "18:56:45",
       "text": "Đang đồng bộ hóa lịch sử đơn hàng từ Like.vn..."
     },
     {
-      "time": "10:04:02",
+      "time": "18:56:48",
       "text": "Đồng bộ thành công! Quét đơn TikTok đang chạy..."
     },
     {
-      "time": "10:04:02",
-      "text": "  -> Đơn Like đang chạy: #md_SHM5WSDSHV_07_2026 | Tăng tim (Like) Tiktok SV4 | Đang chạy"
+      "time": "18:56:48",
+      "text": "Không có đơn TikTok nào đang chạy cho video này. Bắt đầu tạo đơn..."
     },
     {
-      "time": "10:04:02",
-      "text": "Không có đủ đơn đang chạy cho link này (Cần thêm: View (SV5)). Bắt đầu tạo đơn..."
+      "time": "18:56:48",
+      "text": "Chuẩn bị tạo đơn: Like (SV4). Đếm ngược 120s (like.vn yêu cầu đợi)..."
     },
     {
-      "time": "10:04:02",
-      "text": "Chuẩn bị tạo đơn: View (SV5). Đếm ngược 120s (like.vn yêu cầu đợi)..."
+      "time": "18:58:50",
+      "text": "Hết đếm ngược. Bắt đầu gửi yêu cầu tạo đơn cho link #1..."
+    },
+    {
+      "time": "18:58:50",
+      "text": "Loại đơn: Like (SV4)"
+    },
+    {
+      "time": "18:58:50",
+      "text": "Đang tạo đơn Like miễn phí (SV4)..."
+    },
+    {
+      "time": "18:58:51",
+      "text": "Thất bại tạo đơn Like: Bạn chưa đăng nhập. Hãy đăng nhập hoặc đăng ký tài khoản tại hệ thống để mua dịch vụ. "
+    },
+    {
+      "time": "18:58:51",
+      "text": "Hoàn tất. Đơn tiếp theo sẽ là: Like. Chờ 420s..."
+    },
+    {
+      "time": "19:05:54",
+      "text": "Bắt đầu quét (Lần 2): https://www.tiktok.com/@learnlab.vn/video/7663687260734377230"
+    },
+    {
+      "time": "19:05:54",
+      "text": "Đang đồng bộ hóa lịch sử đơn hàng từ Like.vn..."
+    },
+    {
+      "time": "19:05:58",
+      "text": "Đồng bộ thành công! Quét đơn TikTok đang chạy..."
+    },
+    {
+      "time": "19:05:58",
+      "text": "Không có đơn TikTok nào đang chạy cho video này. Bắt đầu tạo đơn..."
+    },
+    {
+      "time": "19:05:58",
+      "text": "Chuẩn bị tạo đơn: Like (SV4). Đếm ngược 120s (like.vn yêu cầu đợi)..."
+    },
+    {
+      "time": "19:07:59",
+      "text": "Hết đếm ngược. Bắt đầu gửi yêu cầu tạo đơn cho link #1..."
+    },
+    {
+      "time": "19:07:59",
+      "text": "Loại đơn: Like (SV4)"
+    },
+    {
+      "time": "19:07:59",
+      "text": "Đang tạo đơn Like miễn phí (SV4)..."
+    },
+    {
+      "time": "19:08:00",
+      "text": "Thất bại tạo đơn Like: Bạn chưa đăng nhập. Hãy đăng nhập hoặc đăng ký tài khoản tại hệ thống để mua dịch vụ. "
+    },
+    {
+      "time": "19:08:00",
+      "text": "Hoàn tất. Đơn tiếp theo sẽ là: Like. Chờ 420s..."
+    },
+    {
+      "time": "19:15:03",
+      "text": "Bắt đầu quét (Lần 3): https://www.tiktok.com/@learnlab.vn/video/7663687260734377230"
+    },
+    {
+      "time": "19:15:03",
+      "text": "Đang đồng bộ hóa lịch sử đơn hàng từ Like.vn..."
+    },
+    {
+      "time": "19:15:07",
+      "text": "Đồng bộ thành công! Quét đơn TikTok đang chạy..."
+    },
+    {
+      "time": "19:15:07",
+      "text": "Không có đơn TikTok nào đang chạy cho video này. Bắt đầu tạo đơn..."
+    },
+    {
+      "time": "19:15:07",
+      "text": "Chuẩn bị tạo đơn: Like (SV4). Đếm ngược 120s (like.vn yêu cầu đợi)..."
+    },
+    {
+      "time": "19:17:08",
+      "text": "Hết đếm ngược. Bắt đầu gửi yêu cầu tạo đơn cho link #1..."
+    },
+    {
+      "time": "19:17:08",
+      "text": "Loại đơn: Like (SV4)"
+    },
+    {
+      "time": "19:17:08",
+      "text": "Đang tạo đơn Like miễn phí (SV4)..."
+    },
+    {
+      "time": "19:17:09",
+      "text": "Thất bại tạo đơn Like: Bạn chưa đăng nhập. Hãy đăng nhập hoặc đăng ký tài khoản tại hệ thống để mua dịch vụ. "
+    },
+    {
+      "time": "19:17:09",
+      "text": "Hoàn tất. Đơn tiếp theo sẽ là: Like. Chờ 420s..."
     }
   ],
-  "scanCount": 1,
+  "scanCount": 3,
   "likeOrderCount": 0,
   "viewOrderCount": 0,
   "nextType": "like",
-  "typesToCreate": [
-    "view"
-  ],
-  "startTime": 1784343838978,
+  "typesToCreate": [],
+  "startTime": 1784462204817,
   "autoCheckInterval": 420
 }

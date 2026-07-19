@@ -5,9 +5,6 @@ import Home from './pages/Home';
 import History from './pages/History';
 import Settings from './pages/Settings';
 
-// Default session cookies for scraping
-const DEFAULT_COOKIE = `XSRF-TOKEN=eyJpdiI6ImhYaGRhVmRMWmR6bEdPaE8rcTlzREE9PSIsInZhbHVlIjoiakk2L2RzMFRkMlRnNFJoZVJ2bHlIVUFwYmxjSFVKNmswRkZKcTh0aFFWMmN3ZzJneXI1cGtoTDFkbERxQUxRRC85WHM3czZrOEYrMmE5czRFU1lrUFBJcjJvQkp3T1FuNTVsMnd6NnlHZnpZVUFZUzlvTkFNNEVhY3hJWFQ3Q2giLCJtYWMiOiJmMmRiMmY5MWYyMjAxYjJhNGU4NDk4OGY5OGNiMDNmNDFkMTdhMGZkMDllY2VmN2IxMmEwMjZiMjhiYTgxYTQyIiwidGFnIjoiIn0%3D; likevn_session=eyJpdiI6InVGUlFaVThqbm1GZGhYS2N5VDZYL1E9PSIsInZhbHVlIjoiUzJRZTZXQStJaXRLL0RjU1Nxc2hqRXBseUlMZmtOQ2pPRG44bGkxTjhhcC9mK2o5WEhYcHBDd25hMkdEbzVSa1V5Uis1djRuMHQwVGF4N0NrSEJVdnVXK3JTSlFkbU9QRG1oS2lCWUhTeDZNR2J3N2pDWi9oTlpTVld6ditsYnYiLCJtYWMiOiIzZWI1ZDRkYzZkOWUwMzVhNjQwMmIwZTQ5ZTMxNThhYWQ4ZGFhZGVmYmMyMGRkM2M2NDU1NWUwNTAwNTJkMjJiIiwidGFnIjoiIn0%3D; cf_clearance=bhYA6DoZBUvPZWTX3NA266BF48agxtddQZrroAunqyc-1784115271-1.2.1.1-Z3qmFdJGCaqMxTtYnaEo.plaGsnQ..xK82naZk_j22i5bQn7TA5AO9f63ZAxJeH1UYHT_OyqRBPlAINMFdIkbaTXppHKO7d0I8zuYk9VpL7XM3frwIO11PQ9ivIx.WwT1bFrcfL6sgGLUH4t1YhzHUOr7XjPLaYOoD1pWPx3JJ4jK1PiXts.o35Viox1El9Y8J7Y1pVqDa8_lPHEzwRjJdnvrPmqeVY9zixMcQtmt7bkl8xghkUTW4e.C1kGSHOddpQkFDPL2zRr3MEFdOD4z6aD_CHMG81pcvpc3T7byaI3ErSDX_WEm7.8zj8VbuIVb4hGWp3CYNQub0wnegrJwQ`;
-
 // Free services configuration on Like.vn
 const INITIAL_SERVICES = {
   like: [
@@ -54,18 +51,8 @@ function AppContent() {
   };
 
   // Config States
-  const [apiKey, setApiKey] = useState(() => {
-    const saved = localStorage.getItem('like_vn_token');
-    if (!saved || saved === 'e8f605443ed9f494fedc98ab7b8b75d3') {
-      return 'db6cfc2375c30fc48cab714cf33bfd08';
-    }
-    return saved;
-  });
-  const [cookieString, setCookieString] = useState(() => {
-    // Chỉ dùng DEFAULT_COOKIE nếu chưa từng lưu gì vào localStorage
-    const saved = localStorage.getItem('like_vn_cookie');
-    return saved !== null ? saved : DEFAULT_COOKIE;
-  });
+  const [apiKey, setApiKey] = useState('');
+  const [cookieString, setCookieString] = useState('');
 
   // Tab & Form States (Dashboard)
   const [serviceType, setServiceType] = useState('like');
@@ -111,13 +98,7 @@ function AppContent() {
   const [historyScope, setHistoryScope] = useState('today');
   const [historySearch, setHistorySearch] = useState('');
 
-  const [likeVnUsername, setLikeVnUsername] = useState(() => {
-    return localStorage.getItem('like_vn_username') || '';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('like_vn_username', likeVnUsername);
-  }, [likeVnUsername]);
+  const [likeVnUsername, setLikeVnUsername] = useState('');
 
   const [connectionStatus, setConnectionStatus] = useState('none');
 
@@ -174,21 +155,19 @@ function AppContent() {
     }
   };
 
-  // Save cookie then reload the entire page
+  // Save cookie to in-memory state and sync to server
   const handleSaveCookie = async () => {
-    localStorage.setItem('like_vn_cookie', cookieString);
     await syncCookieToServer(cookieString);
-    window.location.reload();
+    showPopup('Đã cập nhật Cookie vào hệ thống thành công!', 'success');
   };
 
-  // Clear cookie then reload
+  // Clear cookie from in-memory state and sync to server
   const handleClearCookie = async () => {
     setCookieString('');
-    localStorage.setItem('like_vn_cookie', '');
+    setApiKey('');
     setLikeVnUsername('');
-    localStorage.setItem('like_vn_username', '');
     await syncCookieToServer('');
-    window.location.reload();
+    showPopup('Đã xóa Cookie khỏi phiên chạy!', 'info');
   };
 
   useEffect(() => {
@@ -209,14 +188,7 @@ function AppContent() {
     setSelectedServer(defaultServer);
   }, [serviceType]);
 
-  // Sync token & cookies to localstorage
-  useEffect(() => {
-    localStorage.setItem('like_vn_token', apiKey);
-  }, [apiKey]);
 
-  useEffect(() => {
-    localStorage.setItem('like_vn_cookie', cookieString);
-  }, [cookieString]);
 
   // Sync recent orders to localstorage
   useEffect(() => {
@@ -505,10 +477,17 @@ function AppContent() {
           if (data.isAutoRunning || isFirstFetch) {
             if (data.links && data.links.length > 0) setAutoLinks(data.links);
             if (data.autoTimeWindow) setAutoTimeWindow(data.autoTimeWindow);
-            if (data.cookieString && (isFirstFetch || window.location.pathname !== '/settings')) {
-              setCookieString(data.cookieString);
+            
+            // Only pull cookie/token from server if bot is running and frontend doesn't have it loaded
+            if (data.isAutoRunning) {
+              if (data.cookieString && !cookieString) {
+                setCookieString(data.cookieString);
+              }
+              if (data.apiKey && !apiKey) {
+                setApiKey(data.apiKey);
+              }
             }
-            if (data.apiKey) setApiKey(data.apiKey);
+            
             if (data.autoCheckInterval) setAutoCheckInterval(data.autoCheckInterval);
             isFirstFetch = false;
           }
@@ -664,6 +643,8 @@ function AppContent() {
             cookieString,
             setCookieString,
             handleCookieChange,
+            apiKey,
+            setApiKey,
             connectionStatus,
             setConnectionStatus,
             fetchScrapedHistory,

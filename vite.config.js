@@ -196,7 +196,6 @@ async function placeOrderViaCookie(cookie, serviceId, link, quantity, apiToken) 
     'Accept': 'application/json, text/javascript, */*; q=0.01',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
   };
-  if (apiToken) headers['api-token'] = apiToken;
 
   const response = await makeRequest(endpoint, {
     method: 'POST',
@@ -262,9 +261,9 @@ function saveSession() {
       isAutoRunning: botState.isAutoRunning,
       links: botState.links,
       currentLinkIndex: botState.currentLinkIndex,
-      cookieString: botState.cookieString,
+      cookieString: '',
       autoTimeWindow: botState.autoTimeWindow,
-      apiKey: botState.apiKey,
+      apiKey: '',
       autoPhase: botState.autoPhase,
       countdown: botState.countdown,
       creationCountdown: botState.creationCountdown,
@@ -336,59 +335,69 @@ async function runAutoCheck() {
 
     addBotLog('Đồng bộ thành công! Quét đơn TikTok đang chạy...');
 
+    // Filter all orders for this specific video
+    const linkOrders = orders.filter(o => o.link && o.link.toLowerCase().includes(activeLink.url.toLowerCase().trim()));
+
     const activeStatuses = ['đang chạy', 'đang xử lý', 'chờ duyệt', 'đang chạy...', 'pending', 'processing', 'in progress'];
+    const activeOrders = linkOrders.filter(o => activeStatuses.includes(o.status.toLowerCase()));
+
     let isLikeActive = false;
     let isViewActive = false;
 
-    orders.forEach(o => {
-      const isCurrentLink = o.link && o.link.toLowerCase().includes(activeLink.url.toLowerCase().trim());
-      const isActive = activeStatuses.includes(o.status.toLowerCase());
-      if (isCurrentLink && isActive) {
-        const nameLower = o.serviceName.toLowerCase();
-        if (nameLower.includes('like') || nameLower.includes('tim') || nameLower.includes('heart')) {
-          isLikeActive = true;
-          addBotLog(`  -> Đơn Like đang chạy: #${o.orderId} | ${o.serviceName} | ${o.status}`);
-        } else if (nameLower.includes('view') || nameLower.includes('xem')) {
-          isViewActive = true;
-          addBotLog(`  -> Đơn View đang chạy: #${o.orderId} | ${o.serviceName} | ${o.status}`);
-        }
+    activeOrders.forEach(o => {
+      const nameLower = o.serviceName.toLowerCase();
+      if (nameLower.includes('like') || nameLower.includes('tim') || nameLower.includes('heart')) {
+        isLikeActive = true;
+        addBotLog(`  -> Đơn Like đang chạy: #${o.orderId} | ${o.serviceName} | ${o.status}`);
+      } else if (nameLower.includes('view') || nameLower.includes('xem')) {
+        isViewActive = true;
+        addBotLog(`  -> Đơn View đang chạy: #${o.orderId} | ${o.serviceName} | ${o.status}`);
       }
     });
 
     const mode = activeLink.mode || 'all';
-    let needsLike = false;
-    let needsView = false;
 
-    if (mode === 'all' || mode === 'all_like_first') {
-      needsLike = !isLikeActive;
-      needsView = !isViewActive;
-    } else if (mode === 'like') {
-      needsLike = !isLikeActive;
-    } else if (mode === 'view') {
-      needsView = !isViewActive;
-    }
-
-    if (needsLike || needsView) {
-      botState.typesToCreate = [];
-      if (needsLike && needsView) {
-        if (mode === 'all_like_first') {
-          botState.typesToCreate = ['like', 'view'];
+    // Automatically align nextType based on running status or history
+    if (isLikeActive) {
+      botState.nextType = 'view';
+    } else if (isViewActive) {
+      botState.nextType = 'like';
+    } else {
+      // If nothing is active, check the most recent order for this video
+      if (linkOrders.length > 0) {
+        const lastOrder = linkOrders[0];
+        const lastOrderName = lastOrder.serviceName.toLowerCase();
+        if (lastOrderName.includes('like') || lastOrderName.includes('tim') || lastOrderName.includes('heart')) {
+          botState.nextType = 'view';
         } else {
-          botState.typesToCreate = ['view', 'like'];
+          botState.nextType = 'like';
         }
       } else {
-        if (needsLike) botState.typesToCreate.push('like');
-        if (needsView) botState.typesToCreate.push('view');
+        // If no history, default based on mode
+        if (mode === 'all_like_first' || mode === 'like') {
+          botState.nextType = 'like';
+        } else {
+          botState.nextType = 'view';
+        }
       }
+    }
 
+    // Force strict type if mode is single
+    if (mode === 'like') {
+      botState.nextType = 'like';
+    } else if (mode === 'view') {
+      botState.nextType = 'view';
+    }
+
+    if (activeOrders.length > 0) {
+      addBotLog(`Có đơn TikTok đang chạy cho video này. Đợi ${botState.autoCheckInterval}s để quét kiểm tra lại...`);
+      botState.countdown = botState.autoCheckInterval;
+    } else {
+      const typeText = botState.nextType === 'like' ? 'Like (SV4)' : 'View (SV5)';
+      addBotLog(`Không có đơn TikTok nào đang chạy cho video này. Bắt đầu tạo đơn...`);
       botState.autoPhase = 'creating';
       botState.creationCountdown = ORDER_CREATION_WAIT;
-      const typesText = botState.typesToCreate.map(t => t === 'like' ? 'Like (SV4)' : 'View (SV5)').join(' và ');
-      addBotLog(`Không có đủ đơn đang chạy cho link này (Cần thêm: ${typesText}). Bắt đầu tạo đơn...`);
-      addBotLog(`Chuẩn bị tạo đơn: ${typesText}. Đếm ngược ${ORDER_CREATION_WAIT}s (like.vn yêu cầu đợi)...`);
-    } else {
-      addBotLog(`Đơn đã chạy đủ/đang hoạt động cho link này. Đợi ${botState.autoCheckInterval}s kiểm tra lại...`);
-      botState.countdown = botState.autoCheckInterval;
+      addBotLog(`Chuẩn bị tạo đơn: ${typeText}. Đếm ngược ${ORDER_CREATION_WAIT}s (like.vn yêu cầu đợi)...`);
     }
   } catch (err) {
     addBotLog(`Lỗi đồng bộ/quét: ${err.message}`);
@@ -407,79 +416,60 @@ async function executeOrderCreation() {
     return;
   }
 
-  const types = botState.typesToCreate || [];
-  if (types.length === 0) {
-    addBotLog('Không có loại đơn nào cần tạo.');
-    botState.autoPhase = 'checking';
-    botState.countdown = 0;
-    saveSession();
-    return;
-  }
-
+  const type = botState.nextType;
   addBotLog(`Hết đếm ngược. Bắt đầu gửi yêu cầu tạo đơn cho link #${botState.currentLinkIndex + 1}...`);
-  
+  addBotLog(`Loại đơn: ${type === 'like' ? 'Like (SV4)' : 'View (SV5)'}`);
+
   const link = activeLink.url;
   const mode = activeLink.mode || 'all';
 
-  for (const type of types) {
-    addBotLog(`Loại đơn: ${type === 'like' ? 'Like (SV4)' : 'View (SV5)'}`);
-    
-    if (type === 'like') {
-      addBotLog('Đang tạo đơn Like miễn phí (SV4)...');
-      try {
-        const res = await placeOrderViaCookie(botState.cookieString, '1385', link, 10, botState.apiKey);
-        if (res && res.status === 200 && res.data && res.data.status === 'success') {
-          addBotLog(`TẠO ĐƠN LIKE THÀNH CÔNG! ${res.data.message || ''}`);
-          botState.likeOrderCount += 1;
-          activeLink.currentOrders = (activeLink.currentOrders || 0) + 1;
-          
-          if (mode === 'all' || mode === 'all_view_first' || mode === 'all_like_first') {
-            botState.nextType = 'view';
-          } else if (mode === 'view') {
-            botState.nextType = 'view';
-          } else {
-            botState.nextType = 'like';
-          }
+  if (type === 'like') {
+    addBotLog('Đang tạo đơn Like miễn phí (SV4)...');
+    try {
+      const res = await placeOrderViaCookie(botState.cookieString, '1385', link, 10, botState.apiKey);
+      if (res && res.status === 200 && res.data && res.data.status === 'success') {
+        addBotLog(`TẠO ĐƠN LIKE THÀNH CÔNG! ${res.data.message || ''}`);
+        botState.likeOrderCount += 1;
+        activeLink.currentOrders = (activeLink.currentOrders || 0) + 1;
+        
+        if (mode === 'all' || mode === 'all_view_first' || mode === 'all_like_first') {
+          botState.nextType = 'view';
+        } else if (mode === 'view') {
+          botState.nextType = 'view';
         } else {
-          const errMsg = res?.data?.message || res?.data?.error || JSON.stringify(res?.data).slice(0, 100);
-          addBotLog(`Thất bại tạo đơn Like: ${errMsg}`);
+          botState.nextType = 'like';
         }
-      } catch (e) {
-        addBotLog(`Thất bại tạo đơn Like: ${e.message}`);
+      } else {
+        const errMsg = res?.data?.message || res?.data?.error || JSON.stringify(res?.data).slice(0, 100);
+        addBotLog(`Thất bại tạo đơn Like: ${errMsg}`);
       }
-    } else {
-      addBotLog('Đang tạo đơn View miễn phí (SV5)...');
-      try {
-        const res = await placeOrderViaCookie(botState.cookieString, '8559', link, 100, botState.apiKey);
-        if (res && res.status === 200 && res.data && res.data.status === 'success') {
-          addBotLog(`TẠO ĐƠN VIEW THÀNH CÔNG! ${res.data.message || ''}`);
-          botState.viewOrderCount += 1;
-          activeLink.currentOrders = (activeLink.currentOrders || 0) + 1;
-          
-          if (mode === 'all' || mode === 'all_view_first' || mode === 'all_like_first') {
-            botState.nextType = 'like';
-          } else if (mode === 'like') {
-            botState.nextType = 'like';
-          } else {
-            botState.nextType = 'view';
-          }
-        } else {
-          const errMsg = res?.data?.message || res?.data?.error || JSON.stringify(res?.data).slice(0, 100);
-          addBotLog(`Thất bại tạo đơn View: ${errMsg}`);
-        }
-      } catch (e) {
-        addBotLog(`Thất bại tạo đơn View: ${e.message}`);
-      }
+    } catch (e) {
+      addBotLog(`Thất bại tạo đơn Like: ${e.message}`);
     }
-
-    // Add a tiny delay between requests if there are multiple types to create
-    if (types.length > 1 && type === types[0]) {
-      await new Promise(r => setTimeout(r, 1000));
+  } else {
+    addBotLog('Đang tạo đơn View miễn phí (SV5)...');
+    try {
+      const res = await placeOrderViaCookie(botState.cookieString, '8559', link, 100, botState.apiKey);
+      if (res && res.status === 200 && res.data && res.data.status === 'success') {
+        addBotLog(`TẠO ĐƠN VIEW THÀNH CÔNG! ${res.data.message || ''}`);
+        botState.viewOrderCount += 1;
+        activeLink.currentOrders = (activeLink.currentOrders || 0) + 1;
+        
+        if (mode === 'all' || mode === 'all_view_first' || mode === 'all_like_first') {
+          botState.nextType = 'like';
+        } else if (mode === 'like') {
+          botState.nextType = 'like';
+        } else {
+          botState.nextType = 'view';
+        }
+      } else {
+        const errMsg = res?.data?.message || res?.data?.error || JSON.stringify(res?.data).slice(0, 100);
+        addBotLog(`Thất bại tạo đơn View: ${errMsg}`);
+      }
+    } catch (e) {
+      addBotLog(`Thất bại tạo đơn View: ${e.message}`);
     }
   }
-
-  // Clear types to create
-  botState.typesToCreate = [];
 
   // Check if current active link completed its target
   let transitionCompleted = false;
@@ -527,7 +517,7 @@ async function executeOrderCreation() {
       botState.countdown = 0; // Check the next link immediately!
     } else {
       botState.countdown = botState.autoCheckInterval;
-      addBotLog(`Hoàn tất đợt tạo đơn. Chờ ${botState.autoCheckInterval}s để quét kiểm tra lại...`);
+      addBotLog(`Hoàn tất. Đơn tiếp theo sẽ là: ${botState.nextType === 'like' ? 'Like' : 'View'}. Chờ ${botState.autoCheckInterval}s...`);
     }
   }
   saveSession();
@@ -669,8 +659,8 @@ function initBotRunner() {
       const content = fs.readFileSync(SESSION_FILE, 'utf8');
       const saved = JSON.parse(content);
       
-      botState.cookieString = saved.cookieString || '';
-      botState.apiKey = saved.apiKey || '';
+      botState.cookieString = '';
+      botState.apiKey = '';
       botState.autoTimeWindow = saved.autoTimeWindow || '6h';
       botState.autoPhase = saved.autoPhase || 'checking';
       botState.countdown = typeof saved.countdown === 'number' ? saved.countdown : 0;

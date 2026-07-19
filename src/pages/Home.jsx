@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 
 export default function Home() {
@@ -11,32 +11,13 @@ export default function Home() {
     countdown,
     creationCountdown,
     logs,
-    setLogs,
     scanCount,
     likeOrderCount,
     viewOrderCount,
     autoPhase,
-    recentOrders,
-    setRecentOrders,
     handleSaveLinkToFile,
     stopAutoBot,
     startAutoBot,
-    handlePlaceOrder,
-    serviceType,
-    setServiceType,
-    selectedServer,
-    setSelectedServer,
-    tiktokLink,
-    setTiktokLink,
-    orderIdToCheck,
-    setOrderIdToCheck,
-    handleCheckStatus,
-    checkingStatus,
-    statusResult,
-    checkRecentOrderStatus,
-    getStatusBadgeClass,
-    formatCurrency,
-    INITIAL_SERVICES,
     clearServerLogs,
     showPopup,
     runningTimeStr,
@@ -69,7 +50,6 @@ export default function Home() {
     );
   };
 
-  const [activeTab, setActiveTab] = useState('auto'); // 'auto' | 'order' | 'status'
   const logEndRef = useRef(null);
 
   // Auto scroll terminal logs
@@ -93,11 +73,7 @@ export default function Home() {
         {/* Card 1: Bot Auto Settings */}
         <div className="card glass-card border-glow-blue">
           <div className="card-header">
-            <h2 className="card-title">🤖 Bot Tự Động Quét Đơn</h2>
-            <div className="pulse-indicator">
-              <span className={`pulse-dot ${isAutoRunning ? 'active-glow' : ''}`}></span>
-              <span className="pulse-text">{isAutoRunning ? 'Đang chạy' : 'Đã dừng'}</span>
-            </div>
+            <h2 className="card-title">⚙️ Cấu Hình Bot Auto</h2>
           </div>
 
           <div className="card-body">
@@ -292,10 +268,36 @@ export default function Home() {
               </select>
             </div>
 
+
+
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: Tab Forms & Recent Orders */}
+      <div className="dashboard-col flex-col">
+        {/* Card 3: Bot Control & Status */}
+        <div className="card glass-card border-glow-blue">
+          <div className="card-header">
+            <h2 className="card-title">🤖 Trạng Thái & Điều Khiển Bot</h2>
+            <div className="pulse-indicator">
+              <span className={`pulse-dot ${isAutoRunning ? 'active-glow' : ''}`}></span>
+              <span className="pulse-text">{isAutoRunning ? 'Đang hoạt động' : 'Đã dừng'}</span>
+            </div>
+          </div>
+
+          <div className="card-body flex-col gap-md">
             {/* Countdown Panels */}
             {isAutoRunning && autoPhase === 'checking' && (
-              <div className="countdown-panel checking">
-                <span className="pulse-dot-pink"></span>
+              <div className="countdown-panel checking" style={{ marginBottom: 0 }}>
+                <span style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--primary)',
+                  display: 'inline-block',
+                  animation: 'pulse-glow-anim 1.5s infinite'
+                }}></span>
                 <span>Đang quét trạng thái đơn hàng Like.vn...</span>
                 <div className="countdown-time">
                   Quét lại sau: <strong>{countdown}s</strong>
@@ -304,8 +306,15 @@ export default function Home() {
             )}
 
             {isAutoRunning && autoPhase === 'creating' && (
-              <div className="countdown-panel creating">
-                <span className="pulse-dot-cyan"></span>
+              <div className="countdown-panel creating" style={{ marginBottom: 0 }}>
+                <span style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--secondary)',
+                  display: 'inline-block',
+                  animation: 'pulse-glow-anim 1.5s infinite'
+                }}></span>
                 <span>Đang tạo đơn miễn phí Like.vn...</span>
                 <div className="countdown-time highlighted">
                   Đợi xử lý: <strong>{creationCountdown}s</strong>
@@ -315,7 +324,7 @@ export default function Home() {
 
             {/* Bot statistics */}
             {(isAutoRunning || scanCount > 0) && (
-              <div className="stats-box">
+              <div className="stats-box" style={{ marginBottom: 0, marginTop: isAutoRunning ? '0.5rem' : 0 }}>
                 <div className="stats-header">Thống Kê Chạy Auto</div>
                 <div className="stats-grid">
                   <div className="stat-item">
@@ -343,156 +352,14 @@ export default function Home() {
                 🔴 DỪNG BOT AUTO
               </button>
             ) : (
-              <button type="button" onClick={startAutoBot} className="btn btn-secondary btn-block">
+              <button type="button" onClick={startAutoBot} className="btn btn-secondary btn-block" style={{
+                background: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)',
+                color: '#000',
+                fontWeight: 'bold',
+                boxShadow: '0 0 15px rgba(0, 242, 254, 0.4)'
+              }}>
                 ⚡ BẮT ĐẦU BOT AUTO
               </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* RIGHT COLUMN: Tab Forms & Recent Orders */}
-      <div className="dashboard-col flex-col">
-        {/* Card 3: Interactive Action Forms */}
-        <div className="card glass-card">
-          <div className="tabs-header">
-            <button
-              className={`tab-link ${activeTab === 'order' ? 'active' : ''}`}
-              onClick={() => setActiveTab('order')}
-            >
-              🚀 Tạo đơn nhanh
-            </button>
-            <button
-              className={`tab-link ${activeTab === 'status' ? 'active' : ''}`}
-              onClick={() => setActiveTab('status')}
-            >
-              🔍 Tra cứu đơn
-            </button>
-          </div>
-
-          <div className="card-body">
-            {/* Tab: Place Order */}
-            {activeTab === 'order' && (
-              <form onSubmit={handlePlaceOrder} className="flex-col gap-md">
-                <div className="form-group">
-                  <label className="form-label">Chọn Loại Dịch Vụ</label>
-                  <div className="flex-row">
-                    <label className={`radio-label ${serviceType === 'like' ? 'selected-pink' : ''}`}>
-                      <input
-                        type="radio"
-                        checked={serviceType === 'like'}
-                        onChange={() => setServiceType('like')}
-                      />
-                      Tăng Tim (Likes)
-                    </label>
-                    <label className={`radio-label ${serviceType === 'view' ? 'selected-cyan' : ''}`}>
-                      <input
-                        type="radio"
-                        checked={serviceType === 'view'}
-                        onChange={() => setServiceType('view')}
-                      />
-                      Tăng View
-                    </label>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Nhập Link Video TikTok</label>
-                  <div className="flex-row">
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={tiktokLink}
-                      onChange={(e) => setTiktokLink(e.target.value)}
-                      placeholder="https://www.tiktok.com/@username/video/..."
-                      required
-                    />
-                    {tiktokLink && (
-                      <a
-                        href={tiktokLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-outline border-pink text-pink"
-                        style={{ textDecoration: 'none', width: 'auto', padding: '0 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        Mở
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Số Lượng Tăng</label>
-                  <div className="static-qty-badge">
-                    {selectedServer.min} {serviceType === 'like' ? 'Tim' : 'Lượt xem'} (Cố định cho máy chủ miễn phí)
-                  </div>
-                </div>
-
-                <div className="price-display-box">
-                  <div className="price-row">
-                    <span>Máy chủ:</span>
-                    <strong className="text-cyan">{selectedServer.name}</strong>
-                  </div>
-                  <div className="price-row highlight-border">
-                    <span>Tổng Chi Phí:</span>
-                    <strong className="text-free">MIỄN PHÍ (0 đ)</strong>
-                  </div>
-                </div>
-
-                <button type="submit" className="btn btn-secondary btn-block">
-                  TẠO ĐƠN NGAY
-                </button>
-              </form>
-            )}
-
-            {/* Tab: Check Order Status */}
-            {activeTab === 'status' && (
-              <div className="flex-col gap-md">
-                <div className="form-group">
-                  <label className="form-label">Mã Đơn Hàng (Order ID)</label>
-                  <div className="flex-row">
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={orderIdToCheck}
-                      onChange={(e) => setOrderIdToCheck(e.target.value)}
-                      placeholder="Nhập mã đơn hàng Like.vn..."
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => handleCheckStatus()}
-                      disabled={checkingStatus}
-                      style={{ width: 'auto', padding: '0 1.5rem' }}
-                    >
-                      {checkingStatus ? 'Đang check...' : 'Kiểm tra'}
-                    </button>
-                  </div>
-                </div>
-
-                {statusResult && (
-                  <div className="status-result-card">
-                    <div className="status-result-header">
-                      <span>Đơn hàng #{statusResult.orderId}</span>
-                      <span className={`badge ${getStatusBadgeClass(statusResult.status)}`}>
-                        {statusResult.status}
-                      </span>
-                    </div>
-                    <div className="status-row">
-                      <span>Chi Phí:</span>
-                      <strong>{formatCurrency(statusResult.charge)}</strong>
-                    </div>
-                    <div className="status-row">
-                      <span>Bắt Đầu Từ:</span>
-                      <span>{statusResult.start_count} lượt</span>
-                    </div>
-                    <div className="status-row">
-                      <span>Còn Lại:</span>
-                      <span>{statusResult.remains} lượt</span>
-                    </div>
-                  </div>
-                )}
-              </div>
             )}
           </div>
         </div>

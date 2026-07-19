@@ -10,7 +10,9 @@ export default function Settings() {
     historyLoading,
     handleSaveCookie,
     handleClearCookie,
-    clearServerLogs
+    clearServerLogs,
+    apiKey,
+    setApiKey
   } = useOutletContext();
 
   return (
@@ -31,6 +33,23 @@ export default function Settings() {
       </div>
 
       <div className="card-body flex-col gap-md">
+        <div className="form-group">
+          <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Like.vn API Token (v2)</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Dùng để đồng bộ và check trạng thái đơn hàng
+            </span>
+          </label>
+          <input
+            type="text"
+            className="form-input"
+            style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value.trim())}
+            placeholder="Nhập API Token v2 của tài khoản mới..."
+          />
+        </div>
+
         <div className="form-group">
           <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Like.vn Session Cookies (Scraper)</span>
@@ -65,7 +84,7 @@ export default function Settings() {
             }}
             onClick={handleSaveCookie}
           >
-            Lưu Cookie
+            Cập nhật Cookie
           </button>
           
           <button
